@@ -1,0 +1,718 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="theme-color" content="#0a0a0f">
+<title>The Program — Phase 1</title>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  body {
+    font-family: 'JetBrains Mono', 'SF Mono', 'Courier New', monospace;
+    background: #0a0a0f;
+    color: #e8e8e8;
+    min-height: 100vh;
+    min-height: 100dvh;
+    overscroll-behavior: none;
+  }
+  input, textarea, button { font-family: inherit; }
+  input[type="number"] { -moz-appearance: textfield; }
+  input[type="number"]::-webkit-outer-spin-button,
+  input[type="number"]::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+
+  .header {
+    background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+    padding: 1.25rem 1.25rem 1rem;
+    border-bottom: 2px solid #e94560;
+    position: sticky; top: 0; z-index: 20;
+  }
+  .header-row { display: flex; justify-content: space-between; align-items: flex-start; }
+  .header-phase { font-size: 0.6rem; letter-spacing: 0.2em; color: #e94560; text-transform: uppercase; margin-bottom: 0.2rem; }
+  .header-title { font-size: 1.4rem; font-weight: 800; letter-spacing: -0.02em; }
+  .btn-ghost {
+    background: rgba(233,69,96,0.15); border: 1px solid rgba(233,69,96,0.3);
+    color: #e94560; border-radius: 8px; padding: 0.45rem 0.65rem; cursor: pointer;
+    font-size: 0.7rem; display: flex; align-items: center; gap: 0.3rem;
+  }
+  .btn-primary {
+    background: #e94560; border: none; color: white; border-radius: 10px;
+    padding: 0.85rem; font-size: 0.85rem; font-weight: 700; cursor: pointer;
+    letter-spacing: 0.05em; width: 100%;
+  }
+  .btn-back {
+    background: none; border: none; color: #888; cursor: pointer; padding: 0.25rem;
+    display: flex; align-items: center; gap: 0.3rem; font-size: 0.7rem;
+  }
+
+  .week-selector {
+    display: flex; align-items: center; justify-content: center; gap: 1rem;
+    padding: 1rem; background: rgba(255,255,255,0.02);
+  }
+  .week-selector button {
+    background: none; border: none; color: #e94560; cursor: pointer; padding: 0.25rem; font-size: 1.1rem;
+  }
+  .week-selector button:disabled { color: #333; cursor: default; }
+  .week-num { font-size: 1.1rem; font-weight: 700; text-align: center; }
+  .week-sub { font-size: 0.65rem; color: #888; margin-top: 0.15rem; text-align: center; }
+
+  .stats-grid {
+    display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 0.5rem;
+    padding: 0 1rem; margin-bottom: 1.25rem;
+  }
+  .stat-card {
+    background: rgba(255,255,255,0.04); border-radius: 10px; padding: 0.75rem 0.5rem;
+    text-align: center; border: 1px solid rgba(255,255,255,0.06);
+  }
+  .stat-value { font-size: 1.3rem; font-weight: 800; color: #e94560; }
+  .stat-label { font-size: 0.55rem; color: #666; text-transform: uppercase; letter-spacing: 0.1em; }
+  .stat-sub { font-size: 0.55rem; color: #444; }
+
+  .day-btn {
+    width: 100%; border-radius: 12px; padding: 1rem 1.25rem; margin-bottom: 0.75rem;
+    cursor: pointer; text-align: left; border: 1px solid; color: #e8e8e8;
+  }
+  .day-btn.day-a {
+    background: linear-gradient(135deg, rgba(233,69,96,0.12) 0%, rgba(233,69,96,0.04) 100%);
+    border-color: rgba(233,69,96,0.25);
+  }
+  .day-btn.day-b {
+    background: linear-gradient(135deg, rgba(21,101,192,0.12) 0%, rgba(21,101,192,0.04) 100%);
+    border-color: rgba(21,101,192,0.25);
+  }
+  .day-btn-label { font-size: 0.95rem; font-weight: 700; margin-bottom: 0.2rem; }
+  .day-btn-sub { font-size: 0.7rem; color: #888; }
+  .day-btn-exercises { font-size: 0.6rem; color: #555; margin-top: 0.35rem; }
+
+  .section-bar {
+    padding: 0.5rem 1.25rem; font-size: 0.6rem; font-weight: 700;
+    color: #e94560; letter-spacing: 0.15em; text-transform: uppercase;
+    background: rgba(233,69,96,0.06); border-left: 3px solid #e94560;
+  }
+  .exercise-row {
+    padding: 0.75rem 1.25rem; border-bottom: 1px solid rgba(255,255,255,0.04);
+  }
+  .exercise-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 0.35rem; }
+  .exercise-name { font-size: 0.8rem; font-weight: 600; }
+  .exercise-meta { font-size: 0.55rem; color: #666; margin-top: 0.15rem; }
+  .exercise-last {
+    font-size: 0.55rem; color: #555; background: rgba(255,255,255,0.04);
+    padding: 0.2rem 0.4rem; border-radius: 4px; white-space: nowrap;
+  }
+
+  .set-row { display: flex; align-items: center; gap: 0.5rem; margin-top: 0.35rem; }
+  .set-num { font-size: 0.6rem; color: #555; min-width: 1.25rem; font-weight: 700; }
+  .set-input {
+    background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.1);
+    border-radius: 6px; padding: 0.45rem 0.5rem; color: #e8e8e8;
+    font-size: 0.8rem; text-align: center;
+  }
+  .set-input.weight { width: 4rem; }
+  .set-input.reps { width: 3.5rem; }
+  .set-input.done { border-color: rgba(233,69,96,0.3); }
+  .set-check {
+    width: 2rem; height: 2rem; border-radius: 6px; border: 1px solid rgba(255,255,255,0.1);
+    background: rgba(255,255,255,0.04); color: #555; cursor: pointer;
+    display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+  }
+  .set-check.checked { border-color: #e94560; background: rgba(233,69,96,0.2); color: #e94560; }
+
+  .btn-add-set {
+    margin-top: 0.35rem; background: none; border: none; color: #555;
+    cursor: pointer; font-size: 0.6rem; display: flex; align-items: center; gap: 0.25rem; padding: 0.2rem 0;
+  }
+  .btn-done-toggle {
+    margin-top: 0.25rem; background: rgba(255,255,255,0.04);
+    border: 1px solid rgba(255,255,255,0.08); border-radius: 6px;
+    padding: 0.4rem 0.75rem; color: #666; cursor: pointer;
+    font-size: 0.65rem; display: flex; align-items: center; gap: 0.35rem;
+  }
+  .btn-done-toggle.checked {
+    background: rgba(233,69,96,0.15); border-color: rgba(233,69,96,0.3); color: #e94560;
+  }
+
+  .session-feel {
+    margin: 1rem; padding: 1rem; background: rgba(255,255,255,0.03);
+    border-radius: 12px; border: 1px solid rgba(255,255,255,0.06);
+  }
+  .feel-label { font-size: 0.6rem; color: #e94560; font-weight: 700; text-transform: uppercase; letter-spacing: 0.15em; margin-bottom: 0.75rem; }
+  .feel-sub { font-size: 0.6rem; color: #888; margin-bottom: 0.35rem; }
+  .feel-row { display: flex; gap: 0.35rem; flex-wrap: wrap; margin-bottom: 0.75rem; }
+  .feel-btn {
+    min-width: 2.25rem; padding: 0.4rem 0.5rem; border-radius: 6px;
+    border: 1px solid rgba(255,255,255,0.1); background: rgba(255,255,255,0.04);
+    color: #888; cursor: pointer; font-size: 0.7rem; font-weight: 600;
+  }
+  .feel-btn.selected { border-color: #e94560; background: rgba(233,69,96,0.2); color: #e94560; }
+  .feel-btn.energy.selected { border-color: #5c9ce6; background: rgba(92,156,230,0.15); color: #5c9ce6; }
+  .notes-textarea {
+    width: 100%; background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.08);
+    border-radius: 8px; padding: 0.5rem; color: #ccc; font-size: 0.7rem; resize: vertical;
+  }
+
+  .floating-finish {
+    position: fixed; bottom: 0; left: 0; right: 0; padding: 1rem;
+    background: linear-gradient(transparent, #0a0a0f 30%); z-index: 10;
+  }
+
+  .history-item {
+    width: 100%; text-align: left; background: none; border: none;
+    border-bottom: 1px solid rgba(255,255,255,0.04); padding: 0.85rem 1.25rem;
+    cursor: pointer; color: #e8e8e8; display: flex; justify-content: space-between; align-items: center;
+  }
+  .history-day { font-size: 0.8rem; font-weight: 600; }
+  .history-meta { font-size: 0.6rem; color: #666; margin-top: 0.2rem; }
+  .history-weight { font-size: 0.7rem; color: #e94560; font-weight: 700; }
+
+  .detail-tag {
+    padding: 0.35rem 0.6rem; border-radius: 6px; font-size: 0.65rem; font-weight: 600;
+  }
+  .detail-tag.rpe { background: rgba(233,69,96,0.12); color: #e94560; }
+  .detail-tag.energy { background: rgba(92,156,230,0.12); color: #5c9ce6; }
+  .detail-set {
+    padding: 0.3rem 0.5rem; background: rgba(233,69,96,0.1); border-radius: 5px;
+    font-size: 0.65rem; color: #ccc; border: 1px solid rgba(233,69,96,0.2);
+  }
+  .detail-set.empty { background: rgba(255,255,255,0.03); color: #444; border-color: rgba(255,255,255,0.05); }
+  .detail-note {
+    margin: 1rem 1.25rem; padding: 0.75rem; background: rgba(255,255,255,0.03);
+    border-radius: 8px; border-left: 3px solid rgba(255,255,255,0.1);
+  }
+
+  .overview-row {
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 0.4rem 0; border-bottom: 1px solid rgba(255,255,255,0.04);
+  }
+  .overview-row.active { opacity: 1; }
+  .overview-row.inactive { opacity: 0.4; }
+
+  .btn-delete {
+    background: rgba(255,50,50,0.1); border: 1px solid rgba(255,50,50,0.2);
+    color: #ff5555; border-radius: 6px; padding: 0.4rem; cursor: pointer;
+  }
+
+  .empty-state { text-align: center; padding: 3rem 1rem; color: #444; }
+  .empty-icon { font-size: 2rem; margin-bottom: 0.5rem; }
+
+  .saving-indicator { text-align: center; padding: 0.5rem; font-size: 0.6rem; color: #e94560; }
+
+  @media (min-width: 500px) {
+    body { max-width: 430px; margin: 0 auto; border-left: 1px solid #1a1a2e; border-right: 1px solid #1a1a2e; }
+  }
+</style>
+</head>
+<body>
+<div id="app"></div>
+<script>
+// ==================== DATA ====================
+const PROGRAM = {
+  dayA: {
+    label: "DAY A", subtitle: "Push / Squat",
+    sections: [
+      { name: "WARM-UP", exercises: [
+        { id:"a1", name:"Foam Roll — quads, t-spine, lats", defaultSets:1, hasWeight:false, note:"Find tight spots" },
+        { id:"a2", name:"World's Greatest Stretch", defaultSets:1, hasWeight:false, note:"Open hips & t-spine" },
+        { id:"a3", name:"Band Pull-Aparts", defaultSets:2, hasWeight:false, note:"Shoulder activation" },
+      ]},
+      { name: "STRENGTH", exercises: [
+        { id:"a4", name:"Goblet Squat", defaultSets:3, hasWeight:true, tempo:"3-1-1", rest:"90s", note:"Depth over load" },
+        { id:"a5", name:"DB Bench Press", defaultSets:3, hasWeight:true, tempo:"3-1-1", rest:"90s", note:"Full ROM" },
+        { id:"a6", name:"Single-Leg RDL (DB)", defaultSets:2, hasWeight:true, tempo:"3-1-1", rest:"60s", note:"Balance + posterior" },
+      ]},
+      { name: "ACCESSORY", exercises: [
+        { id:"a7", name:"Half-Kneeling Cable Press", defaultSets:2, hasWeight:true, tempo:"2-1-2", rest:"60s", note:"Anti-rotation" },
+        { id:"a8", name:"Farmer's Carry", defaultSets:3, hasWeight:true, rest:"60s", note:"Tall posture, grip" },
+      ]},
+      { name: "COOLDOWN", exercises: [
+        { id:"a9", name:"90/90 Hip Stretch + Breathing", defaultSets:1, hasWeight:false, note:"4s in, 6s out" },
+      ]},
+    ]
+  },
+  dayB: {
+    label: "DAY B", subtitle: "Pull / Hinge",
+    sections: [
+      { name: "WARM-UP", exercises: [
+        { id:"b1", name:"Foam Roll — glutes, adductors, calves", defaultSets:1, hasWeight:false, note:"Breathe into it" },
+        { id:"b2", name:"Dead Bug", defaultSets:2, hasWeight:false, note:"Core activation" },
+        { id:"b3", name:"Cat-Cow + T-Spine Rotation", defaultSets:1, hasWeight:false, note:"Spinal mobility" },
+      ]},
+      { name: "STRENGTH", exercises: [
+        { id:"b4", name:"Trap Bar Deadlift", defaultSets:3, hasWeight:true, tempo:"3-1-1", rest:"2 min", note:"Hinge pattern" },
+        { id:"b5", name:"Cable Row", defaultSets:3, hasWeight:true, tempo:"2-1-2", rest:"90s", note:"Squeeze at top" },
+        { id:"b6", name:"Bulgarian Split Squat", defaultSets:2, hasWeight:true, tempo:"3-1-1", rest:"60s", note:"BW first" },
+      ]},
+      { name: "ACCESSORY", exercises: [
+        { id:"b7", name:"Pallof Press", defaultSets:2, hasWeight:true, tempo:"2-2-2", rest:"60s", note:"Anti-rotation core" },
+        { id:"b8", name:"Turkish Get-Up", defaultSets:2, hasWeight:true, rest:"60s", note:"Light KB or none" },
+      ]},
+      { name: "COOLDOWN", exercises: [
+        { id:"b9", name:"Pigeon Stretch + Box Breathing", defaultSets:1, hasWeight:false, note:"4-4-4-4 pattern" },
+      ]},
+    ]
+  }
+};
+
+const WEEK_TARGETS = {
+  1:{sets:2,rpe:"5-6",label:"Movement quality"},
+  2:{sets:2,rpe:"5-6",label:"Movement quality"},
+  3:{sets:3,rpe:"6-7",label:"Building capacity"},
+  4:{sets:3,rpe:"6-7",label:"Building capacity"},
+  5:{sets:3,rpe:"7-8",label:"Progression test"},
+  6:{sets:2,rpe:"5",label:"Deload"},
+};
+
+// ==================== STATE ====================
+let state = {
+  view: "home",
+  sessions: [],
+  currentWeek: 1,
+  activeSession: null,
+  activeDay: null,
+  viewingSession: null,
+  sessionRPE: null,
+  energyLevel: null,
+  sessionNote: "",
+};
+
+function loadData() {
+  try {
+    const raw = localStorage.getItem("the-program-data");
+    if (raw) {
+      const d = JSON.parse(raw);
+      state.sessions = d.sessions || [];
+      state.currentWeek = d.currentWeek || 1;
+    }
+  } catch(e) {}
+}
+
+function saveData() {
+  try {
+    localStorage.setItem("the-program-data", JSON.stringify({
+      sessions: state.sessions,
+      currentWeek: state.currentWeek,
+    }));
+  } catch(e) {}
+}
+
+function todayStr() {
+  return new Date().toISOString().split("T")[0];
+}
+
+function formatDate(s) {
+  const d = new Date(s + "T00:00:00");
+  const days = ["Sun","Mon","Tue","Wed","Thu","Fri","Sat"];
+  const months = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+  return `${days[d.getDay()]} ${d.getDate()} ${months[d.getMonth()]}`;
+}
+
+function getLastWeight(exerciseId) {
+  for (let i = state.sessions.length - 1; i >= 0; i--) {
+    const s = state.sessions[i];
+    if (s.exercises && s.exercises[exerciseId]) {
+      const sets = s.exercises[exerciseId].sets;
+      for (const set of sets) {
+        if (set.weight) return set.weight;
+      }
+    }
+  }
+  return null;
+}
+
+function getSessionCount() { return state.sessions.filter(s => s.completed).length; }
+function getWeekSessions() { return state.sessions.filter(s => s.week === state.currentWeek && s.completed).length; }
+
+// ==================== ICONS ====================
+const ICO = {
+  chevL: `<svg width="18" height="18" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M12 4l-6 6 6 6"/></svg>`,
+  chevR: `<svg width="18" height="18" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M8 4l6 6-6 6"/></svg>`,
+  check: `<svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 8.5l3.5 3.5 6.5-7"/></svg>`,
+  plus: `<svg width="16" height="16" viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M9 3v12M3 9h12"/></svg>`,
+  history: `<svg width="18" height="18" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="10" cy="10" r="7"/><path d="M10 6v4.5l3 1.5"/></svg>`,
+  dumbbell: `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M6.5 6.5l11 11M4 9l2.5-2.5M12.5 17.5L15 20M17.5 4.5l2 2M4.5 17.5l2 2"/></svg>`,
+  trash: `<svg width="15" height="15" viewBox="0 0 15 15" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M2 4h11M5 4V2.5a1 1 0 011-1h3a1 1 0 011 1V4M6 7v4M9 7v4M3.5 4l.7 8.5a1 1 0 001 .9h4.6a1 1 0 001-.9L11.5 4"/></svg>`,
+};
+
+// ==================== RENDER ====================
+const $ = id => document.getElementById(id);
+const app = () => document.getElementById("app");
+
+function render() {
+  switch(state.view) {
+    case "home": renderHome(); break;
+    case "workout": renderWorkout(); break;
+    case "history": renderHistory(); break;
+    case "detail": renderDetail(); break;
+  }
+}
+
+function renderHome() {
+  const wt = WEEK_TARGETS[state.currentWeek];
+  const total = getSessionCount();
+  const weekS = getWeekSessions();
+
+  let overviewRows = "";
+  for (let w = 1; w <= 6; w++) {
+    const t = WEEK_TARGETS[w];
+    const cls = w === state.currentWeek ? "active" : "inactive";
+    overviewRows += `<div class="overview-row ${cls}">
+      <div style="display:flex;align-items:center;gap:0.5rem">
+        <span style="font-size:0.65rem;font-weight:700;color:${w===state.currentWeek?'#e94560':'#666'};min-width:3rem">Wk ${w}</span>
+        <span style="font-size:0.65rem;color:#aaa">${t.label}</span>
+      </div>
+      <div style="font-size:0.6rem;color:#666">${t.sets} sets • RPE ${t.rpe}</div>
+    </div>`;
+  }
+
+  const dayAExs = PROGRAM.dayA.sections.filter(s=>s.name==="STRENGTH").flatMap(s=>s.exercises.map(e=>e.name)).join(" • ");
+  const dayBExs = PROGRAM.dayB.sections.filter(s=>s.name==="STRENGTH").flatMap(s=>s.exercises.map(e=>e.name)).join(" • ");
+
+  app().innerHTML = `
+    <div class="header">
+      <div class="header-row">
+        <div>
+          <div class="header-phase">Phase 1 — Return to Training</div>
+          <div class="header-title">THE PROGRAM</div>
+        </div>
+        <button class="btn-ghost" onclick="goHistory()">${ICO.history} History</button>
+      </div>
+    </div>
+
+    <div class="week-selector">
+      <button onclick="changeWeek(-1)" ${state.currentWeek<=1?'disabled':''}>${ICO.chevL}</button>
+      <div>
+        <div class="week-num">Week ${state.currentWeek}</div>
+        <div class="week-sub">${wt.label} — RPE ${wt.rpe}</div>
+      </div>
+      <button onclick="changeWeek(1)" ${state.currentWeek>=6?'disabled':''}>${ICO.chevR}</button>
+    </div>
+
+    <div class="stats-grid">
+      <div class="stat-card"><div class="stat-value">${total}</div><div class="stat-label">Total</div><div class="stat-sub">sessions</div></div>
+      <div class="stat-card"><div class="stat-value">${weekS}</div><div class="stat-label">This week</div><div class="stat-sub">of 2</div></div>
+      <div class="stat-card"><div class="stat-value">${wt.sets}</div><div class="stat-label">Target sets</div><div class="stat-sub">per exercise</div></div>
+    </div>
+
+    <div style="padding:0 1rem">
+      <div style="font-size:0.6rem;color:#555;text-transform:uppercase;letter-spacing:0.15em;margin-bottom:0.75rem">Start Session</div>
+      <button class="day-btn day-a" onclick="startWorkout('dayA')">
+        <div style="display:flex;justify-content:space-between;align-items:center">
+          <div>
+            <div class="day-btn-label" style="color:#e94560">DAY A</div>
+            <div class="day-btn-sub">Push / Squat</div>
+            <div class="day-btn-exercises">${dayAExs}</div>
+          </div>
+          ${ICO.dumbbell}
+        </div>
+      </button>
+      <button class="day-btn day-b" onclick="startWorkout('dayB')">
+        <div style="display:flex;justify-content:space-between;align-items:center">
+          <div>
+            <div class="day-btn-label" style="color:#5c9ce6">DAY B</div>
+            <div class="day-btn-sub">Pull / Hinge</div>
+            <div class="day-btn-exercises">${dayBExs}</div>
+          </div>
+          ${ICO.dumbbell}
+        </div>
+      </button>
+    </div>
+
+    <div style="margin:1.25rem 1rem 0;background:rgba(255,255,255,0.03);border-radius:10px;padding:1rem;border:1px solid rgba(255,255,255,0.05)">
+      <div style="font-size:0.6rem;color:#555;text-transform:uppercase;letter-spacing:0.15em;margin-bottom:0.75rem">Phase 1 Overview</div>
+      ${overviewRows}
+    </div>
+  `;
+}
+
+function renderWorkout() {
+  const s = state.activeSession;
+  const day = PROGRAM[state.activeDay];
+  const wt = WEEK_TARGETS[state.currentWeek];
+
+  let sectionsHTML = "";
+  day.sections.forEach(section => {
+    sectionsHTML += `<div class="section-bar">${section.name}</div>`;
+    section.exercises.forEach(ex => {
+      const exData = s.exercises[ex.id];
+      const last = getLastWeight(ex.id);
+      const metaParts = [ex.tempo?`Tempo: ${ex.tempo}`:'', ex.rest?`Rest: ${ex.rest}`:'', ex.note].filter(Boolean).join(" • ");
+
+      let setsHTML = "";
+      if (ex.hasWeight) {
+        exData.sets.forEach((set, idx) => {
+          const doneClass = set.done ? "done" : "";
+          const checkClass = set.done ? "checked" : "";
+          setsHTML += `<div class="set-row">
+            <div class="set-num">${idx+1}</div>
+            <input type="number" inputmode="decimal" placeholder="kg" value="${set.weight}" class="set-input weight ${doneClass}" onchange="updateSet('${ex.id}',${idx},'weight',this.value)">
+            <input type="number" inputmode="numeric" placeholder="reps" value="${set.reps}" class="set-input reps ${doneClass}" onchange="updateSet('${ex.id}',${idx},'reps',this.value)">
+            <button class="set-check ${checkClass}" onclick="toggleSet('${ex.id}',${idx})">${ICO.check}</button>
+          </div>`;
+        });
+        setsHTML += `<button class="btn-add-set" onclick="addSet('${ex.id}')">${ICO.plus} Add set</button>`;
+      } else {
+        const checkClass = exData.sets[0]?.done ? "checked" : "";
+        setsHTML = `<button class="btn-done-toggle ${checkClass}" onclick="toggleSet('${ex.id}',0)">${ICO.check} ${exData.sets[0]?.done?'Done':'Mark done'}</button>`;
+      }
+
+      sectionsHTML += `<div class="exercise-row">
+        <div class="exercise-header">
+          <div>
+            <div class="exercise-name">${ex.name}</div>
+            <div class="exercise-meta">${metaParts}</div>
+          </div>
+          ${last ? `<div class="exercise-last">Last: ${last}kg</div>` : ''}
+        </div>
+        ${setsHTML}
+      </div>`;
+    });
+  });
+
+  let rpeButtons = "";
+  [5,6,7,8,9,10].forEach(r => {
+    const sel = state.sessionRPE === r ? "selected" : "";
+    rpeButtons += `<button class="feel-btn ${sel}" onclick="setRPE(${r})">${r}</button>`;
+  });
+
+  let energyButtons = "";
+  ["Low","OK","Good","Great"].forEach(e => {
+    const sel = state.energyLevel === e ? "selected" : "";
+    energyButtons += `<button class="feel-btn energy ${sel}" onclick="setEnergy('${e}')">${e}</button>`;
+  });
+
+  app().innerHTML = `
+    <div class="header">
+      <div style="display:flex;justify-content:space-between;align-items:center">
+        <button class="btn-back" onclick="cancelWorkout()">${ICO.chevL} Cancel</button>
+        <div style="text-align:center">
+          <div style="font-weight:700;font-size:0.95rem">${day.label}</div>
+          <div style="font-size:0.6rem;color:#888">Wk ${state.currentWeek} • RPE ${wt.rpe}</div>
+        </div>
+        <button class="btn-primary" style="width:auto;padding:0.45rem 0.75rem;font-size:0.7rem" onclick="finishWorkout()">Finish</button>
+      </div>
+    </div>
+
+    ${sectionsHTML}
+
+    <div class="session-feel">
+      <div class="feel-label">Session Feel</div>
+      <div class="feel-sub">Overall RPE</div>
+      <div class="feel-row">${rpeButtons}</div>
+      <div class="feel-sub">Energy Level</div>
+      <div class="feel-row">${energyButtons}</div>
+      <div class="feel-sub">Notes</div>
+      <textarea class="notes-textarea" rows="3" placeholder="How'd it feel? Sleep quality? Anything to note..." oninput="state.sessionNote=this.value">${state.sessionNote}</textarea>
+    </div>
+
+    <div class="floating-finish">
+      <button class="btn-primary" onclick="finishWorkout()">FINISH & SAVE SESSION</button>
+    </div>
+    <div style="height:5rem"></div>
+  `;
+}
+
+function renderHistory() {
+  const sorted = [...state.sessions].sort((a,b) => new Date(b.date) - new Date(a.date));
+  let items = "";
+
+  if (sorted.length === 0) {
+    items = `<div class="empty-state"><div class="empty-icon">🏋️</div><div style="font-size:0.75rem">No sessions yet</div><div style="font-size:0.6rem;margin-top:0.25rem">Complete a workout to see it here</div></div>`;
+  } else {
+    sorted.forEach(session => {
+      const day = PROGRAM[session.dayKey];
+      const strengthExs = day?.sections.filter(s=>s.name==="STRENGTH").flatMap(s=>s.exercises) || [];
+      let heaviest = 0;
+      strengthExs.forEach(ex => {
+        const sets = session.exercises[ex.id]?.sets || [];
+        sets.forEach(s => { const w = parseFloat(s.weight)||0; if(w>heaviest) heaviest=w; });
+      });
+      const color = session.dayKey==="dayA" ? "#e94560" : "#5c9ce6";
+
+      items += `<button class="history-item" onclick="viewSession('${session.id}')">
+        <div>
+          <div class="history-day"><span style="color:${color}">${session.dayLabel}</span><span style="color:#555;font-weight:400;font-size:0.65rem;margin-left:0.5rem">Wk ${session.week}</span></div>
+          <div class="history-meta">${formatDate(session.date)}${session.rpe?' • RPE '+session.rpe:''}${session.energy?' • '+session.energy:''}</div>
+        </div>
+        <div style="text-align:right">
+          ${heaviest>0?`<div class="history-weight">${heaviest}kg</div>`:''}
+          ${ICO.chevR}
+        </div>
+      </button>`;
+    });
+  }
+
+  app().innerHTML = `
+    <div class="header">
+      <div style="display:flex;align-items:center;gap:0.75rem">
+        <button class="btn-back" onclick="goHome()">${ICO.chevL}</button>
+        <div style="font-weight:700;font-size:1rem">Training History</div>
+        <div style="margin-left:auto;font-size:0.65rem;color:#666">${state.sessions.length} sessions</div>
+      </div>
+    </div>
+    ${items}
+  `;
+}
+
+function renderDetail() {
+  const s = state.viewingSession;
+  if (!s) return goHistory();
+  const day = PROGRAM[s.dayKey];
+
+  let tags = "";
+  if (s.rpe) tags += `<span class="detail-tag rpe">RPE ${s.rpe}</span>`;
+  if (s.energy) tags += `<span class="detail-tag energy">Energy: ${s.energy}</span>`;
+
+  let sectionsHTML = "";
+  day.sections.forEach(section => {
+    sectionsHTML += `<div class="section-bar" style="margin-top:0.5rem">${section.name}</div>`;
+    section.exercises.forEach(ex => {
+      const exData = s.exercises[ex.id];
+      if (!exData) return;
+      let setsHTML = "";
+      if (ex.hasWeight) {
+        setsHTML = `<div style="display:flex;gap:0.5rem;flex-wrap:wrap">`;
+        exData.sets.forEach(set => {
+          if (set.weight) {
+            setsHTML += `<div class="detail-set">${set.weight}kg × ${set.reps||'?'}</div>`;
+          } else {
+            setsHTML += `<div class="detail-set empty">—</div>`;
+          }
+        });
+        setsHTML += `</div>`;
+      } else {
+        const done = exData.sets[0]?.done;
+        setsHTML = `<div style="font-size:0.6rem;color:${done?'#e94560':'#555'}">${done?'✓ Completed':'— Skipped'}</div>`;
+      }
+      sectionsHTML += `<div style="padding:0.6rem 1.25rem;border-bottom:1px solid rgba(255,255,255,0.03)">
+        <div style="font-size:0.75rem;font-weight:600;margin-bottom:0.3rem">${ex.name}</div>
+        ${setsHTML}
+      </div>`;
+    });
+  });
+
+  let noteHTML = "";
+  if (s.note) {
+    noteHTML = `<div class="detail-note">
+      <div style="font-size:0.55rem;color:#666;margin-bottom:0.3rem;text-transform:uppercase;letter-spacing:0.1em">Notes</div>
+      <div style="font-size:0.7rem;color:#aaa;line-height:1.5">${s.note}</div>
+    </div>`;
+  }
+
+  app().innerHTML = `
+    <div class="header">
+      <div style="display:flex;align-items:center;justify-content:space-between">
+        <div style="display:flex;align-items:center;gap:0.5rem">
+          <button class="btn-back" onclick="goHistory()">${ICO.chevL}</button>
+          <div>
+            <div style="font-weight:700">${s.dayLabel}</div>
+            <div style="font-size:0.6rem;color:#888">${formatDate(s.date)} • Week ${s.week}</div>
+          </div>
+        </div>
+        <button class="btn-delete" onclick="deleteSession('${s.id}')">${ICO.trash}</button>
+      </div>
+    </div>
+    ${tags?`<div style="display:flex;gap:0.75rem;padding:0.75rem 1.25rem;background:rgba(255,255,255,0.02)">${tags}</div>`:''}
+    ${sectionsHTML}
+    ${noteHTML}
+  `;
+}
+
+// ==================== ACTIONS ====================
+function goHome() { state.view="home"; state.viewingSession=null; render(); }
+function goHistory() { state.view="history"; state.viewingSession=null; render(); }
+
+function changeWeek(delta) {
+  state.currentWeek = Math.max(1, Math.min(6, state.currentWeek + delta));
+  saveData(); render();
+}
+
+function startWorkout(dayKey) {
+  const day = PROGRAM[dayKey];
+  const wt = WEEK_TARGETS[state.currentWeek];
+  const session = {
+    id: Date.now().toString(),
+    date: todayStr(),
+    dayKey, dayLabel: day.label,
+    week: state.currentWeek,
+    exercises: {},
+    note: "", rpe: null, energy: null, completed: false,
+  };
+  day.sections.forEach(section => {
+    section.exercises.forEach(ex => {
+      if (ex.hasWeight) {
+        const n = Math.min(ex.defaultSets, wt.sets);
+        session.exercises[ex.id] = { sets: Array.from({length:n}, ()=>({weight:"",reps:"",done:false})) };
+      } else {
+        session.exercises[ex.id] = { sets: [{done:false}] };
+      }
+    });
+  });
+  state.activeSession = session;
+  state.activeDay = dayKey;
+  state.sessionRPE = null;
+  state.energyLevel = null;
+  state.sessionNote = "";
+  state.view = "workout";
+  render();
+  window.scrollTo(0,0);
+}
+
+function updateSet(exId, idx, field, value) {
+  state.activeSession.exercises[exId].sets[idx][field] = value;
+}
+
+function toggleSet(exId, idx) {
+  const set = state.activeSession.exercises[exId].sets[idx];
+  set.done = !set.done;
+  render();
+}
+
+function addSet(exId) {
+  state.activeSession.exercises[exId].sets.push({weight:"",reps:"",done:false});
+  render();
+}
+
+function setRPE(val) { state.sessionRPE = val; render(); }
+function setEnergy(val) { state.energyLevel = val; render(); }
+
+function cancelWorkout() {
+  if (confirm("Leave without saving?")) {
+    state.activeSession = null; state.activeDay = null;
+    state.view = "home"; render();
+  }
+}
+
+function finishWorkout() {
+  state.activeSession.note = state.sessionNote;
+  state.activeSession.rpe = state.sessionRPE;
+  state.activeSession.energy = state.energyLevel;
+  state.activeSession.completed = true;
+  state.sessions.push(state.activeSession);
+  saveData();
+  state.activeSession = null; state.activeDay = null;
+  state.view = "home"; render();
+  window.scrollTo(0,0);
+}
+
+function viewSession(id) {
+  state.viewingSession = state.sessions.find(s => s.id === id);
+  state.view = "detail"; render();
+  window.scrollTo(0,0);
+}
+
+function deleteSession(id) {
+  if (confirm("Delete this session?")) {
+    state.sessions = state.sessions.filter(s => s.id !== id);
+    saveData();
+    state.viewingSession = null;
+    state.view = "history"; render();
+  }
+}
+
+// ==================== INIT ====================
+loadData();
+render();
+</script>
+</body>
+</html>
