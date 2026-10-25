@@ -198,30 +198,46 @@
 
   .saving-indicator { text-align: center; padding: 0.5rem; font-size: 0.6rem; color: #e94560; }
 
-  .swap-trigger { cursor: pointer; position: relative; }
-  .swap-trigger .swap-hint {
-    font-size: 0.45rem; color: #555; text-transform: uppercase; letter-spacing: 0.1em;
-    margin-left: 0.35rem; opacity: 0.7;
+  .swap-trigger { cursor: pointer; }
+  .swap-hint {
+    font-size: 0.5rem; color: #e94560; text-transform: uppercase; letter-spacing: 0.1em;
+    margin-left: 0.4rem; opacity: 0.6;
   }
-  .swap-menu {
-    position: absolute; left: 0; top: 100%; z-index: 30;
-    background: #1a1a2e; border: 1px solid rgba(233,69,96,0.3); border-radius: 8px;
-    padding: 0.25rem; margin-top: 0.25rem; min-width: 220px;
-    box-shadow: 0 8px 24px rgba(0,0,0,0.5);
+  .sheet-overlay {
+    position: fixed; inset: 0; background: rgba(0,0,0,0.65); z-index: 50;
   }
-  .swap-menu-label {
-    font-size: 0.5rem; color: #666; text-transform: uppercase; letter-spacing: 0.1em;
-    padding: 0.35rem 0.5rem 0.2rem;
+  .sheet {
+    position: fixed; left: 0; right: 0; bottom: 0; z-index: 51;
+    max-width: 430px; margin: 0 auto;
+    background: #1a1a2e; border-top: 2px solid #e94560; border-radius: 14px 14px 0 0;
+    padding: 1rem 1rem calc(1rem + env(safe-area-inset-bottom));
   }
+  .sheet-title { font-size: 0.85rem; font-weight: 700; }
+  .sheet-sub { font-size: 0.6rem; color: #888; margin: 0.2rem 0 0.75rem; }
   .swap-option {
-    display: block; width: 100%; text-align: left; background: none; border: none;
-    color: #ccc; padding: 0.5rem; font-size: 0.7rem; cursor: pointer;
-    border-radius: 6px; font-family: inherit;
+    display: flex; justify-content: space-between; width: 100%; text-align: left;
+    background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.06);
+    color: #ddd; padding: 0.85rem; font-size: 0.8rem; cursor: pointer;
+    border-radius: 8px; margin-bottom: 0.4rem;
   }
   .swap-option:active { background: rgba(233,69,96,0.15); }
-  .swap-option.current { color: #e94560; font-weight: 600; }
-  .swap-overlay {
-    position: fixed; top: 0; left: 0; right: 0; bottom: 0; z-index: 25;
+  .swap-option.current { color: #e94560; border-color: rgba(233,69,96,0.4); font-weight: 600; }
+  .sheet-cancel {
+    width: 100%; background: none; border: none; color: #888; padding: 0.75rem;
+    font-size: 0.75rem; cursor: pointer; margin-top: 0.25rem;
+  }
+  .rotation-tag {
+    display: inline-block; font-size: 0.55rem; color: #4ade80; background: rgba(74,222,128,0.1);
+    padding: 0.1rem 0.4rem; border-radius: 4px; margin-left: 0.35rem;
+  }
+  .btn-row { display: flex; gap: 0.5rem; }
+  .btn-edit {
+    background: rgba(92,156,230,0.12); border: 1px solid rgba(92,156,230,0.3);
+    color: #5c9ce6; border-radius: 6px; padding: 0.4rem 0.7rem; cursor: pointer; font-size: 0.65rem;
+  }
+  .btn-reset {
+    display: block; margin: 2rem auto; background: none; border: 1px solid rgba(255,50,50,0.25);
+    color: #ff5555; border-radius: 8px; padding: 0.6rem 1rem; font-size: 0.65rem; cursor: pointer;
   }
 
   @media (min-width: 500px) {
@@ -239,24 +255,31 @@ const PROGRAM = {
     sections: [
       { name: "WARM-UP", exercises: [
         { id:"a1", name:"Foam Roll — quads, t-spine, lats", defaultSets:1, hasWeight:false, note:"Find tight spots" },
-        { id:"a2", name:"World's Greatest Stretch", defaultSets:1, hasWeight:false, note:"Open hips & t-spine" },
+        { id:"a2", weeks:"odd", name:"World's Greatest Stretch", defaultSets:1, hasWeight:false, note:"Open hips & t-spine" },
+        { id:"a2b", weeks:"even", name:"Cossack Squat (bodyweight)", defaultSets:1, hasWeight:false, note:"5 each side, hold a rack, only as deep as comfortable" },
         { id:"a3", name:"Band Pull-Aparts", defaultSets:2, hasWeight:false, note:"Shoulder activation" },
       ]},
       { name: "TENDON PREP", exercises: [
-        { id:"a10", name:"Goblet Squat Hold (bottom)", defaultSets:1, hasWeight:false, note:"30s hold, low effort, feed the tendons" },
-        { id:"a11", name:"Push-Up Hold (bottom)", defaultSets:1, hasWeight:false, note:"30s hold, chest 2 inches off floor" },
+        { id:"a10", weeks:"odd", name:"Goblet Squat Hold (bottom)", defaultSets:1, hasWeight:false, note:"30s hold, low effort, feed the tendons" },
+        { id:"a10b", weeks:"even", name:"Wall Sit", defaultSets:1, hasWeight:false, note:"45s, thighs parallel, knee tendon prep" },
+        { id:"a11", weeks:"odd", name:"Push-Up Hold (bottom)", defaultSets:1, hasWeight:false, note:"30s, chest just off floor. Hands on a bench if too hard" },
+        { id:"a11b", weeks:"even", name:"Push-Up Hold (halfway)", defaultSets:1, hasWeight:false, note:"30s hold, elbows at 90°" },
       ]},
       { name: "STRENGTH", exercises: [
-        { id:"a4", name:"Goblet Squat", defaultSets:3, hasWeight:true, tempo:"3-1-1", rest:"90s", note:"Depth over load", swaps:["Barbell Back Squat","Leg Press","DB Front Squat"] },
-        { id:"a5", name:"DB Bench Press", defaultSets:3, hasWeight:true, tempo:"3-1-1", rest:"90s", note:"Full ROM", swaps:["Barbell Bench Press","Machine Chest Press","Incline DB Press"] },
-        { id:"a6", name:"DB Romanian Deadlift", defaultSets:2, hasWeight:true, tempo:"3-1-2", rest:"60s", note:"Hinge at hips, soft knees", swaps:["Barbell RDL","KB RDL","Cable Pull-Through"] },
+        { id:"a4", name:"Goblet Squat", anchor:true, defaultSets:3, hasWeight:true, tempo:"3s down, 1s pause", rest:"90s", note:"Depth over load", swaps:["Barbell Back Squat","Leg Press","DB Front Squat"] },
+        { id:"a5", name:"DB Bench Press", anchor:true, defaultSets:3, hasWeight:true, tempo:"3s down, 1s pause", rest:"90s", note:"Full range of motion", swaps:["Barbell Bench Press","Machine Chest Press","Incline DB Press"] },
+        { id:"a6", weeks:"odd", name:"DB Romanian Deadlift", defaultSets:2, hasWeight:true, tempo:"3s down", rest:"60s", note:"Hinge at hips, soft knees, flat back", swaps:["Barbell RDL","KB RDL","Cable Pull-Through"] },
+        { id:"a6b", weeks:"even", name:"DB Hip Thrust", defaultSets:2, hasWeight:true, tempo:"2s squeeze at top", rest:"60s", note:"Upper back on bench, chin tucked", swaps:["Barbell Hip Thrust","DB Glute Bridge (floor)","Cable Pull-Through"] },
       ]},
       { name: "ACCESSORY", exercises: [
-        { id:"a7", name:"Half-Kneeling Cable Press", defaultSets:2, hasWeight:true, tempo:"2-1-2", rest:"60s", note:"Anti-rotation", swaps:["DB Shoulder Press","Landmine Press","Standing Cable Press"] },
-        { id:"a8", name:"Farmer's Carry", defaultSets:3, hasWeight:true, rest:"60s", note:"Enter secs not reps, aim 30-40s", swaps:["Trap Bar Carry","Suitcase Carry (1 arm)","Dead Hang"] },
+        { id:"a7", weeks:"odd", name:"Half-Kneeling Cable Press", defaultSets:2, hasWeight:true, tempo:"2s return", rest:"60s", note:"8 each side, don't let the cable twist you", swaps:["DB Shoulder Press","Landmine Press","Standing Cable Press"] },
+        { id:"a7b", weeks:"even", name:"Half-Kneeling Landmine Press", defaultSets:2, hasWeight:true, tempo:"2s down", rest:"60s", note:"8 each arm, ribs down", swaps:["Half-Kneeling DB Press","Seated DB Shoulder Press","Standing Cable Press"] },
+        { id:"a8", weeks:"odd", name:"Farmer's Carry", unit:"secs", defaultSets:3, hasWeight:true, rest:"60s", note:"Heavy DB each hand, tall posture, 30-40s", swaps:["Trap Bar Carry","Suitcase Carry (1 arm)","Dead Hang"] },
+        { id:"a8b", weeks:"even", name:"Suitcase Carry (1 arm)", unit:"secs", defaultSets:3, hasWeight:true, rest:"60s", note:"30s each side, don't lean", swaps:["Farmer's Carry","Trap Bar Carry","Dead Hang"] },
       ]},
       { name: "COOLDOWN", exercises: [
-        { id:"a9", name:"90/90 Hip Stretch + Breathing", defaultSets:1, hasWeight:false, note:"4s in, 6s out" },
+        { id:"a9", weeks:"odd", name:"90/90 Hip Stretch + Breathing", defaultSets:1, hasWeight:false, note:"4s in, 6s out" },
+        { id:"a9b", weeks:"even", name:"Deep Squat Hold + Breathing", defaultSets:1, hasWeight:false, note:"60s, hold a rack for balance, 4s in 6s out" },
         { id:"a12", name:"Couch Stretch (hip flexor)", defaultSets:1, hasWeight:false, note:"60s each side, breathe" },
         { id:"a13", name:"Hang from bar", defaultSets:1, hasWeight:false, note:"30-60s, decompress spine + shoulders" },
       ]},
@@ -267,24 +290,32 @@ const PROGRAM = {
     sections: [
       { name: "WARM-UP", exercises: [
         { id:"b1", name:"Foam Roll — glutes, adductors, calves", defaultSets:1, hasWeight:false, note:"Breathe into it" },
-        { id:"b2", name:"Dead Bug", defaultSets:2, hasWeight:false, note:"Core activation" },
-        { id:"b3", name:"Cat-Cow + T-Spine Rotation", defaultSets:1, hasWeight:false, note:"Spinal mobility" },
+        { id:"b2", weeks:"odd", name:"Dead Bug", defaultSets:2, hasWeight:false, note:"Core activation" },
+        { id:"b2b", weeks:"even", name:"Bird Dog", defaultSets:2, hasWeight:false, note:"5 each side, 3s hold, hips level" },
+        { id:"b3", weeks:"odd", name:"Cat-Cow + T-Spine Rotation", defaultSets:1, hasWeight:false, note:"Spinal mobility" },
+        { id:"b3b", weeks:"even", name:"Standing Hip CARs", defaultSets:1, hasWeight:false, note:"3 slow circles each way, each leg" },
       ]},
       { name: "TENDON PREP", exercises: [
-        { id:"b10", name:"Split Squat Hold (bottom)", defaultSets:1, hasWeight:false, note:"30s each side, low effort" },
-        { id:"b11", name:"RDL Hold (bottom)", defaultSets:1, hasWeight:false, note:"30s, slight knee bend, feel hamstrings" },
+        { id:"b10", weeks:"odd", name:"Split Squat Hold (bottom)", defaultSets:1, hasWeight:false, note:"30s each side, low effort" },
+        { id:"b10b", weeks:"even", name:"Single-Leg Calf Raise Hold (top)", defaultSets:1, hasWeight:false, note:"30s each side, Achilles prep for running" },
+        { id:"b11", weeks:"odd", name:"RDL Hold (bottom)", defaultSets:1, hasWeight:false, note:"30s, slight knee bend, feel hamstrings" },
+        { id:"b11b", weeks:"even", name:"Glute Bridge Hold", defaultSets:1, hasWeight:false, note:"30-45s, squeeze glutes, ribs down" },
       ]},
       { name: "STRENGTH", exercises: [
-        { id:"b4", name:"Trap Bar Deadlift", defaultSets:3, hasWeight:true, tempo:"3-1-1", rest:"2 min", note:"Hinge pattern", swaps:["KB Deadlift","Barbell Deadlift","DB Sumo Deadlift"] },
-        { id:"b5", name:"Cable Row", defaultSets:3, hasWeight:true, tempo:"2-1-2", rest:"90s", note:"Squeeze at top", swaps:["DB Row","Barbell Row","Machine Row"] },
-        { id:"b6", name:"Reverse Lunge (DB)", defaultSets:2, hasWeight:true, tempo:"3-1-1", rest:"60s", note:"8 each leg, BW first", swaps:["Walking Lunge","Step-Up (DB)","Split Squat"] },
+        { id:"b4", name:"Trap Bar Deadlift", anchor:true, defaultSets:3, hasWeight:true, tempo:"Controlled lower", rest:"2 min", note:"Push the floor away, bar stays close", swaps:["KB Deadlift","Barbell Deadlift","DB Sumo Deadlift"] },
+        { id:"b5", name:"Cable Row", anchor:true, defaultSets:3, hasWeight:true, tempo:"1s squeeze at chest", rest:"90s", note:"Shoulder blades back, no leaning", swaps:["DB Row","Barbell Row","Machine Row"] },
+        { id:"b6", weeks:"odd", name:"Reverse Lunge (DB)", defaultSets:2, hasWeight:true, tempo:"3s down", rest:"60s", note:"8 each leg, bodyweight first session", swaps:["Walking Lunge","Step-Up (DB)","Split Squat"] },
+        { id:"b6b", weeks:"even", name:"DB Step-Up", defaultSets:2, hasWeight:true, tempo:"3s lower", rest:"60s", note:"Knee-height box, 8 each leg, drive through front heel", swaps:["Bulgarian Split Squat","Reverse Lunge (DB)","Lateral Step-Up"] },
       ]},
       { name: "ACCESSORY", exercises: [
-        { id:"b7", name:"Pallof Press", defaultSets:2, hasWeight:true, tempo:"2-2-2", rest:"60s", note:"Anti-rotation core", swaps:["Cable Woodchop","Plank (3 x 30-45s)","Ab Wheel Rollout"] },
-        { id:"b8", name:"Cable Face Pull", defaultSets:2, hasWeight:true, tempo:"2-1-2", rest:"60s", note:"Posture + shoulder health", swaps:["Band Pull-Apart","DB Reverse Fly","Prone Y Raise"] },
+        { id:"b7", weeks:"odd", name:"Pallof Press", defaultSets:2, hasWeight:true, tempo:"2s hold arms out", rest:"60s", note:"10 each side, resist the twist", swaps:["Cable Woodchop","Plank (3 x 30-45s)","Ab Wheel Rollout"] },
+        { id:"b7b", weeks:"even", name:"Lat Pulldown", defaultSets:2, hasWeight:true, tempo:"3s return", rest:"60s", note:"10-12 reps, pull to upper chest", swaps:["Assisted Pull-Up","Single-Arm Cable Pulldown","Band-Assisted Chin-Up"] },
+        { id:"b8", weeks:"odd", name:"Cable Face Pull", defaultSets:2, hasWeight:true, tempo:"1s pause at face", rest:"60s", note:"12-15 reps, light, posture + shoulder health", swaps:["Band Pull-Apart","DB Reverse Fly","Prone Y Raise"] },
+        { id:"b8b", weeks:"even", name:"Side Plank", defaultSets:1, hasWeight:false, note:"2 rounds × 30s each side" },
       ]},
       { name: "COOLDOWN", exercises: [
-        { id:"b9", name:"Pigeon Stretch + Box Breathing", defaultSets:1, hasWeight:false, note:"4-4-4-4 pattern" },
+        { id:"b9", weeks:"odd", name:"Pigeon Stretch + Box Breathing", defaultSets:1, hasWeight:false, note:"4-4-4-4 pattern" },
+        { id:"b9b", weeks:"even", name:"Child's Pose + Lat Stretch", defaultSets:1, hasWeight:false, note:"60s, walk hands to each side" },
         { id:"b12", name:"Standing Hamstring Stretch", defaultSets:1, hasWeight:false, note:"60s each side, foot on bench" },
         { id:"b13", name:"Hang from bar", defaultSets:1, hasWeight:false, note:"30-60s, decompress spine + shoulders" },
       ]},
@@ -293,12 +324,12 @@ const PROGRAM = {
 };
 
 const WEEK_TARGETS = {
-  1:{sets:2,rpe:"5-6",label:"Movement quality"},
-  2:{sets:2,rpe:"5-6",label:"Movement quality"},
-  3:{sets:3,rpe:"6-7",label:"Building capacity"},
-  4:{sets:3,rpe:"6-7",label:"Building capacity"},
-  5:{sets:3,rpe:"7-8",label:"Progression test"},
-  6:{sets:2,rpe:"5",label:"Deload"},
+  1:{sets:2,reps:"10",rpe:"5-6",label:"Movement quality"},
+  2:{sets:2,reps:"10",rpe:"5-6",label:"Movement quality"},
+  3:{sets:3,reps:"8-10",rpe:"6-7",label:"Building capacity"},
+  4:{sets:3,reps:"8-10",rpe:"6-7",label:"Building capacity"},
+  5:{sets:3,reps:"6-8",rpe:"7-8",label:"Progression test"},
+  6:{sets:2,reps:"8",rpe:"5",label:"Deload"},
 };
 
 // ==================== STATE ====================
@@ -313,7 +344,10 @@ let state = {
   energyLevel: null,
   sessionNote: "",
   openSwapMenu: null,
+  editingId: null,
 };
+
+const DRAFT_KEY = "the-program-draft";
 
 function loadData() {
   try {
@@ -324,6 +358,59 @@ function loadData() {
       state.currentWeek = d.currentWeek || 1;
     }
   } catch(e) {}
+  // Restore an in-progress session (e.g. after screen lock or the page reloading)
+  try {
+    const draft = localStorage.getItem(DRAFT_KEY);
+    if (draft) {
+      const d = JSON.parse(draft);
+      if (d.activeSession && PROGRAM[d.activeDay]) {
+        state.activeSession = d.activeSession;
+        state.activeDay = d.activeDay;
+        state.sessionRPE = d.sessionRPE ?? null;
+        state.energyLevel = d.energyLevel ?? null;
+        state.sessionNote = d.sessionNote || "";
+        state.editingId = d.editingId || null;
+        state.view = "workout";
+      }
+    }
+  } catch(e) {}
+}
+
+function saveDraft() {
+  if (!state.activeSession) return;
+  try {
+    localStorage.setItem(DRAFT_KEY, JSON.stringify({
+      activeSession: state.activeSession,
+      activeDay: state.activeDay,
+      sessionRPE: state.sessionRPE,
+      energyLevel: state.energyLevel,
+      sessionNote: state.sessionNote,
+      editingId: state.editingId,
+    }));
+  } catch(e) {}
+}
+
+function clearDraft() {
+  try { localStorage.removeItem(DRAFT_KEY); } catch(e) {}
+}
+
+// Rotation: exercises tagged "odd" run in weeks 1/3/5, "even" in weeks 2/4/6. Untagged run every week.
+function inWeek(ex, week) {
+  if (!ex.weeks) return true;
+  return (ex.weeks === "odd") === (week % 2 === 1);
+}
+function rotationLabel(week) { return week % 2 === 1 ? "Rotation 1" : "Rotation 2"; }
+
+function findExercise(dayKey, exId) {
+  for (const sec of PROGRAM[dayKey].sections) {
+    const ex = sec.exercises.find(e => e.id === exId);
+    if (ex) return ex;
+  }
+  return null;
+}
+
+function escapeHTML(str) {
+  return String(str ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 }
 
 function saveData() {
@@ -349,6 +436,7 @@ function formatDate(s) {
 function getLastWeight(exerciseId) {
   for (let i = state.sessions.length - 1; i >= 0; i--) {
     const s = state.sessions[i];
+    if (state.editingId && s.id === state.editingId) continue;
     if (s.exercises && s.exercises[exerciseId]) {
       const sets = s.exercises[exerciseId].sets;
       for (const set of sets) {
@@ -396,10 +484,10 @@ function renderSingaporeCountdown() {
   // Running progression phases with date boundaries
   const phases = [
     { id: "gym", label: "Gym Only", sub: "Weeks 1-4 — Build the habit. Two gym sessions per week, walk for cardio.", dateEnd: "2026-11-22", color: "#e94560" },
-    { id: "runwalk", label: "Run/Walk", sub: "Weeks 5-8 — 1 min run, 2 min walk × 8. Twice a week. Shift ratio each week.", dateEnd: "2026-12-20", color: "#f4a261" },
-    { id: "continuous", label: "Running + REHIT", sub: "Weeks 9-12 — 25-30 min easy runs (conversational pace). Add REHIT as a gym finisher — 2 × 20s all-out bike sprints with 3 min easy pedalling between. Total 10 min.", dateEnd: "2027-01-17", color: "#2a9d8f" },
-    { id: "extend", label: "10K + 4×4 + REHIT", sub: "Weeks 13-16 — One long easy run, building 5 min/week. One Norwegian 4×4: 4 min hard (85-95% HR), 3 min walk, ×4 rounds. REHIT on gym days as a finisher.", dateEnd: "2027-02-14", color: "#5c9ce6" },
-    { id: "ready", label: "Singapore Ready", sub: "Weeks 17+ — Comfortable 5-10K. Maintain one 4×4 + REHIT finishers. Taper last week before trip.", dateEnd: "2027-02-27", color: "#4ade80" },
+    { id: "runwalk", label: "Run/Walk", sub: "Weeks 5-10 — Start 1 min run / 2 min walk × 8, twice a week. Add about 30s of running per interval each week, ending with 20 min continuous. Repeat a week any time it felt hard.", dateEnd: "2027-01-03", color: "#f4a261" },
+    { id: "continuous", label: "Easy Running + REHIT", sub: "Weeks 11-14 — 20-35 min easy runs, twice a week, at a pace where you can talk. Optional gym finisher: REHIT, 2 × 20s all-out bike sprints with about 3 min easy pedalling between (10 min total).", dateEnd: "2027-01-31", color: "#2a9d8f" },
+    { id: "extend", label: "5K+ and 4×4", sub: "Weeks 15-17 — One long easy run, adding about 5 min a week toward 45-60 min. One Norwegian 4×4: 4 min hard (90-95% max HR), 3 min easy jog or brisk walk, × 4.", dateEnd: "2027-02-20", color: "#5c9ce6" },
+    { id: "ready", label: "Singapore Ready", sub: "Final week — Ease off: two short easy runs and no hard sessions, so you arrive fresh.", dateEnd: "2027-02-27", color: "#4ade80" },
   ];
 
   // Determine current phase
@@ -465,12 +553,14 @@ function renderHome() {
         <span style="font-size:0.65rem;font-weight:700;color:${w===state.currentWeek?'#e94560':'#666'};min-width:3rem">Wk ${w}</span>
         <span style="font-size:0.65rem;color:#aaa">${t.label}</span>
       </div>
-      <div style="font-size:0.6rem;color:#666">${t.sets} sets • RPE ${t.rpe}</div>
+      <div style="font-size:0.6rem;color:#666">${t.sets}×${t.reps} • RPE ${t.rpe}</div>
     </div>`;
   }
 
-  const dayAExs = PROGRAM.dayA.sections.filter(s=>s.name==="STRENGTH").flatMap(s=>s.exercises.map(e=>e.name)).join(" • ");
-  const dayBExs = PROGRAM.dayB.sections.filter(s=>s.name==="STRENGTH").flatMap(s=>s.exercises.map(e=>e.name)).join(" • ");
+  const strengthList = dk => PROGRAM[dk].sections.filter(s=>s.name==="STRENGTH")
+    .flatMap(s=>s.exercises.filter(e=>inWeek(e, state.currentWeek)).map(e=>e.name)).join(" • ");
+  const dayAExs = strengthList("dayA");
+  const dayBExs = strengthList("dayB");
 
   app().innerHTML = `
     <div class="header">
@@ -487,7 +577,7 @@ function renderHome() {
       <button onclick="changeWeek(-1)" ${state.currentWeek<=1?'disabled':''}>${ICO.chevL}</button>
       <div>
         <div class="week-num">Week ${state.currentWeek}</div>
-        <div class="week-sub">${wt.label} — RPE ${wt.rpe}</div>
+        <div class="week-sub">${wt.label} — ${wt.reps} reps @ RPE ${wt.rpe}<span class="rotation-tag">${rotationLabel(state.currentWeek)}</span></div>
       </div>
       <button onclick="changeWeek(1)" ${state.currentWeek>=6?'disabled':''}>${ICO.chevR}</button>
     </div>
@@ -525,6 +615,7 @@ function renderHome() {
     <div style="margin:1.25rem 1rem 0;background:rgba(255,255,255,0.03);border-radius:10px;padding:1rem;border:1px solid rgba(255,255,255,0.05)">
       <div style="font-size:0.6rem;color:#555;text-transform:uppercase;letter-spacing:0.15em;margin-bottom:0.75rem">Phase 1 Overview</div>
       ${overviewRows}
+      <div style="font-size:0.6rem;color:#888;margin-top:0.75rem;line-height:1.5">When to go heavier: if you hit the top of the rep range on every set and it felt at or below the target RPE, add the smallest jump next time (1-2kg dumbbells, 2.5-5kg bar). Reps on the main lifts follow the weekly target. Accessories use the reps in their notes.</div>
     </div>
 
     ${renderSingaporeCountdown()}
@@ -534,29 +625,21 @@ function renderHome() {
 function renderWorkout() {
   const s = state.activeSession;
   const day = PROGRAM[state.activeDay];
-  const wt = WEEK_TARGETS[state.currentWeek];
+  const wt = WEEK_TARGETS[s.week] || WEEK_TARGETS[1];
+  const editing = !!state.editingId;
 
   let sectionsHTML = "";
   day.sections.forEach(section => {
+    const exs = section.exercises.filter(ex => s.exercises[ex.id]);
+    if (!exs.length) return;
     sectionsHTML += `<div class="section-bar">${section.name}</div>`;
-    section.exercises.forEach(ex => {
+    exs.forEach(ex => {
       const exData = s.exercises[ex.id];
       const last = getLastWeight(ex.id);
       const displayName = s.swaps[ex.id] || ex.name;
-      const isSwapped = !!s.swaps[ex.id];
-      const metaParts = [ex.tempo?`Tempo: ${ex.tempo}`:'', ex.rest?`Rest: ${ex.rest}`:'', ex.note].filter(Boolean).join(" • ");
+      const metaParts = [ex.anchor?'Anchor lift':'', ex.tempo||'', ex.rest?`Rest: ${ex.rest}`:'', ex.note].filter(Boolean).join(" • ");
       const hasSwaps = ex.swaps && ex.swaps.length > 0;
-      const menuOpen = state.openSwapMenu === ex.id;
-
-      let swapMenuHTML = "";
-      if (hasSwaps && menuOpen) {
-        let optionsHTML = `<button class="swap-option ${!isSwapped?'current':''}" onclick="swapExercise('${ex.id}',null)">${ex.name}${!isSwapped?' ✓':''}</button>`;
-        ex.swaps.forEach(sw => {
-          const isCurrent = s.swaps[ex.id] === sw;
-          optionsHTML += `<button class="swap-option ${isCurrent?'current':''}" onclick="swapExercise('${ex.id}','${sw}')">${sw}${isCurrent?' ✓':''}</button>`;
-        });
-        swapMenuHTML = `<div class="swap-overlay" onclick="closeSwapMenu()"></div><div class="swap-menu"><div class="swap-menu-label">Same pattern — swap to:</div>${optionsHTML}</div>`;
-      }
+      const secondField = ex.unit === "secs" ? "secs" : "reps";
 
       let setsHTML = "";
       if (ex.hasWeight) {
@@ -565,8 +648,8 @@ function renderWorkout() {
           const checkClass = set.done ? "checked" : "";
           setsHTML += `<div class="set-row">
             <div class="set-num">${idx+1}</div>
-            <input type="number" inputmode="decimal" placeholder="kg" value="${set.weight}" class="set-input weight ${doneClass}" onchange="updateSet('${ex.id}',${idx},'weight',this.value)">
-            <input type="number" inputmode="numeric" placeholder="reps" value="${set.reps}" class="set-input reps ${doneClass}" onchange="updateSet('${ex.id}',${idx},'reps',this.value)">
+            <input type="number" inputmode="decimal" placeholder="kg" value="${escapeHTML(set.weight)}" class="set-input weight ${doneClass}" oninput="updateSet('${ex.id}',${idx},'weight',this.value)">
+            <input type="number" inputmode="numeric" placeholder="${secondField}" value="${escapeHTML(set.reps)}" class="set-input reps ${doneClass}" oninput="updateSet('${ex.id}',${idx},'reps',this.value)">
             <button class="set-check ${checkClass}" onclick="toggleSet('${ex.id}',${idx})">${ICO.check}</button>
           </div>`;
         });
@@ -578,17 +661,37 @@ function renderWorkout() {
 
       sectionsHTML += `<div class="exercise-row">
         <div class="exercise-header">
-          <div class="swap-trigger" style="position:relative" ${hasSwaps?`onclick="toggleSwapMenu('${ex.id}')"`:''}> 
-            <div class="exercise-name">${displayName}${hasSwaps?'<span class="swap-hint">⇄ swap</span>':''}</div>
-            ${swapMenuHTML}
-            <div class="exercise-meta">${metaParts}</div>
+          <div class="${hasSwaps?'swap-trigger':''}" ${hasSwaps?`onclick="openSwap('${ex.id}')"`:''}>
+            <div class="exercise-name">${escapeHTML(displayName)}${hasSwaps?'<span class="swap-hint">⇄ swap</span>':''}</div>
+            <div class="exercise-meta">${escapeHTML(metaParts)}</div>
           </div>
-          ${last ? `<div class="exercise-last">Last: ${last}kg</div>` : ''}
+          ${last ? `<div class="exercise-last">Last: ${escapeHTML(last)}kg</div>` : ''}
         </div>
         ${setsHTML}
       </div>`;
     });
   });
+
+  // Swap picker as a bottom sheet, rendered outside the exercise list so taps can't fall through
+  let sheetHTML = "";
+  if (state.openSwapMenu) {
+    const ex = findExercise(state.activeDay, state.openSwapMenu);
+    if (ex && ex.swaps) {
+      const current = s.swaps[ex.id];
+      let opts = `<button class="swap-option ${!current?'current':''}" onclick="swapExercise('${ex.id}',-1)"><span>${escapeHTML(ex.name)}</span><span>${!current?'✓':'Default'}</span></button>`;
+      ex.swaps.forEach((sw, i) => {
+        const isCur = current === sw;
+        opts += `<button class="swap-option ${isCur?'current':''}" onclick="swapExercise('${ex.id}',${i})"><span>${escapeHTML(sw)}</span><span>${isCur?'✓':''}</span></button>`;
+      });
+      sheetHTML = `<div class="sheet-overlay" onclick="closeSwapMenu()"></div>
+        <div class="sheet">
+          <div class="sheet-title">Swap exercise</div>
+          <div class="sheet-sub">Same movement pattern. Applies to this session only.</div>
+          ${opts}
+          <button class="sheet-cancel" onclick="closeSwapMenu()">Cancel</button>
+        </div>`;
+    }
+  }
 
   let rpeButtons = "";
   [5,6,7,8,9,10].forEach(r => {
@@ -607,10 +710,10 @@ function renderWorkout() {
       <div style="display:flex;justify-content:space-between;align-items:center">
         <button class="btn-back" onclick="cancelWorkout()">${ICO.chevL} Cancel</button>
         <div style="text-align:center">
-          <div style="font-weight:700;font-size:0.95rem">${day.label}</div>
-          <div style="font-size:0.6rem;color:#888">Wk ${state.currentWeek} • RPE ${wt.rpe}</div>
+          <div style="font-weight:700;font-size:0.95rem">${editing?'Editing ':''}${day.label}</div>
+          <div style="font-size:0.6rem;color:#888">${editing?formatDate(s.date)+' • ':''}Wk ${s.week} • ${wt.reps} reps @ RPE ${wt.rpe}</div>
         </div>
-        <button class="btn-primary" style="width:auto;padding:0.45rem 0.75rem;font-size:0.7rem" onclick="finishWorkout()">Finish</button>
+        <button class="btn-primary" style="width:auto;padding:0.45rem 0.75rem;font-size:0.7rem" onclick="finishWorkout()">${editing?'Save':'Finish'}</button>
       </div>
     </div>
 
@@ -623,13 +726,14 @@ function renderWorkout() {
       <div class="feel-sub">Energy Level</div>
       <div class="feel-row">${energyButtons}</div>
       <div class="feel-sub">Notes</div>
-      <textarea class="notes-textarea" rows="3" placeholder="How'd it feel? Sleep quality? Anything to note..." oninput="state.sessionNote=this.value">${state.sessionNote}</textarea>
+      <textarea class="notes-textarea" rows="3" placeholder="How'd it feel? Sleep quality? Anything to note..." oninput="state.sessionNote=this.value;saveDraft()">${escapeHTML(state.sessionNote)}</textarea>
     </div>
 
     <div class="floating-finish">
-      <button class="btn-primary" onclick="finishWorkout()">FINISH & SAVE SESSION</button>
+      <button class="btn-primary" onclick="finishWorkout()">${editing?'SAVE CHANGES':'FINISH & SAVE SESSION'}</button>
     </div>
     <div style="height:5rem"></div>
+    ${sheetHTML}
   `;
 }
 
@@ -672,6 +776,7 @@ function renderHistory() {
       </div>
     </div>
     ${items}
+    ${state.sessions.length ? `<button class="btn-reset" onclick="resetAll()">Delete all history and start fresh</button>` : ''}
   `;
 }
 
@@ -695,7 +800,7 @@ function renderDetail() {
         setsHTML = `<div style="display:flex;gap:0.5rem;flex-wrap:wrap">`;
         exData.sets.forEach(set => {
           if (set.weight) {
-            setsHTML += `<div class="detail-set">${set.weight}kg × ${set.reps||'?'}</div>`;
+            setsHTML += `<div class="detail-set">${escapeHTML(set.weight)}kg × ${escapeHTML(set.reps)||'?'}${ex.unit==='secs'?'s':''}</div>`;
           } else {
             setsHTML += `<div class="detail-set empty">—</div>`;
           }
@@ -716,7 +821,7 @@ function renderDetail() {
   if (s.note) {
     noteHTML = `<div class="detail-note">
       <div style="font-size:0.55rem;color:#666;margin-bottom:0.3rem;text-transform:uppercase;letter-spacing:0.1em">Notes</div>
-      <div style="font-size:0.7rem;color:#aaa;line-height:1.5">${s.note}</div>
+      <div style="font-size:0.7rem;color:#aaa;line-height:1.5">${escapeHTML(s.note)}</div>
     </div>`;
   }
 
@@ -730,7 +835,10 @@ function renderDetail() {
             <div style="font-size:0.6rem;color:#888">${formatDate(s.date)} • Week ${s.week}</div>
           </div>
         </div>
-        <button class="btn-delete" onclick="deleteSession('${s.id}')">${ICO.trash}</button>
+        <div class="btn-row">
+          <button class="btn-edit" onclick="editSession('${s.id}')">Edit</button>
+          <button class="btn-delete" onclick="deleteSession('${s.id}')">${ICO.trash}</button>
+        </div>
       </div>
     </div>
     ${tags?`<div style="display:flex;gap:0.75rem;padding:0.75rem 1.25rem;background:rgba(255,255,255,0.02)">${tags}</div>`:''}
@@ -761,7 +869,7 @@ function startWorkout(dayKey) {
     note: "", rpe: null, energy: null, completed: false,
   };
   day.sections.forEach(section => {
-    section.exercises.forEach(ex => {
+    section.exercises.filter(ex => inWeek(ex, state.currentWeek)).forEach(ex => {
       if (ex.hasWeight) {
         const n = Math.min(ex.defaultSets, wt.sets);
         session.exercises[ex.id] = { sets: Array.from({length:n}, ()=>({weight:"",reps:"",done:false})) };
@@ -775,28 +883,34 @@ function startWorkout(dayKey) {
   state.sessionRPE = null;
   state.energyLevel = null;
   state.sessionNote = "";
+  state.editingId = null;
+  state.openSwapMenu = null;
   state.view = "workout";
+  saveDraft();
   render();
   window.scrollTo(0,0);
 }
 
 function updateSet(exId, idx, field, value) {
   state.activeSession.exercises[exId].sets[idx][field] = value;
+  saveDraft();
 }
 
 function toggleSet(exId, idx) {
   const set = state.activeSession.exercises[exId].sets[idx];
   set.done = !set.done;
+  saveDraft();
   render();
 }
 
 function addSet(exId) {
   state.activeSession.exercises[exId].sets.push({weight:"",reps:"",done:false});
+  saveDraft();
   render();
 }
 
-function toggleSwapMenu(exId) {
-  state.openSwapMenu = state.openSwapMenu === exId ? null : exId;
+function openSwap(exId) {
+  state.openSwapMenu = exId;
   render();
 }
 
@@ -805,36 +919,92 @@ function closeSwapMenu() {
   render();
 }
 
-function swapExercise(exId, newName) {
-  if (newName) {
-    state.activeSession.swaps[exId] = newName;
+function swapExercise(exId, idx) {
+  const ex = findExercise(state.activeDay, exId);
+  if (ex && idx >= 0 && ex.swaps[idx]) {
+    state.activeSession.swaps[exId] = ex.swaps[idx];
   } else {
     delete state.activeSession.swaps[exId];
   }
   state.openSwapMenu = null;
+  saveDraft();
   render();
 }
 
-function setRPE(val) { state.sessionRPE = val; render(); }
-function setEnergy(val) { state.energyLevel = val; render(); }
+function setRPE(val) { state.sessionRPE = val; saveDraft(); render(); }
+function setEnergy(val) { state.energyLevel = val; saveDraft(); render(); }
+
+function endActiveSession() {
+  state.activeSession = null; state.activeDay = null;
+  state.editingId = null; state.openSwapMenu = null;
+  clearDraft();
+}
 
 function cancelWorkout() {
-  if (confirm("Leave without saving?")) {
-    state.activeSession = null; state.activeDay = null;
-    state.view = "home"; render();
+  const editingId = state.editingId;
+  const msg = editingId ? "Discard your changes?" : "Leave without saving?";
+  if (!confirm(msg)) return;
+  endActiveSession();
+  if (editingId) {
+    state.viewingSession = state.sessions.find(s => s.id === editingId);
+    state.view = "detail";
+  } else {
+    state.view = "home";
   }
+  render();
+  window.scrollTo(0,0);
 }
 
 function finishWorkout() {
-  state.activeSession.note = state.sessionNote;
-  state.activeSession.rpe = state.sessionRPE;
-  state.activeSession.energy = state.energyLevel;
-  state.activeSession.completed = true;
-  state.sessions.push(state.activeSession);
+  const s = state.activeSession;
+  s.note = state.sessionNote;
+  s.rpe = state.sessionRPE;
+  s.energy = state.energyLevel;
+  s.completed = true;
+  const editingId = state.editingId;
+  if (editingId) {
+    const i = state.sessions.findIndex(x => x.id === editingId);
+    if (i >= 0) state.sessions[i] = s; else state.sessions.push(s);
+  } else {
+    state.sessions.push(s);
+  }
   saveData();
-  state.activeSession = null; state.activeDay = null;
-  state.view = "home"; render();
+  endActiveSession();
+  if (editingId) {
+    state.viewingSession = s;
+    state.view = "detail";
+  } else {
+    state.view = "home";
+  }
+  render();
   window.scrollTo(0,0);
+}
+
+function editSession(id) {
+  const orig = state.sessions.find(s => s.id === id);
+  if (!orig) return;
+  const copy = JSON.parse(JSON.stringify(orig));
+  copy.swaps = copy.swaps || {};
+  state.activeSession = copy;
+  state.activeDay = copy.dayKey;
+  state.sessionRPE = copy.rpe ?? null;
+  state.energyLevel = copy.energy ?? null;
+  state.sessionNote = copy.note || "";
+  state.editingId = id;
+  state.openSwapMenu = null;
+  state.view = "workout";
+  saveDraft();
+  render();
+  window.scrollTo(0,0);
+}
+
+function resetAll() {
+  if (!confirm("Delete ALL saved sessions and start fresh at Week 1? This can't be undone.")) return;
+  state.sessions = [];
+  state.currentWeek = 1;
+  endActiveSession();
+  saveData();
+  goHome();
 }
 
 function viewSession(id) {
@@ -855,6 +1025,9 @@ function deleteSession(id) {
 // ==================== INIT ====================
 loadData();
 render();
+// Belt and braces: save the in-progress session whenever the app is hidden (screen lock, app switch)
+document.addEventListener("visibilitychange", () => { if (document.hidden) saveDraft(); });
+window.addEventListener("pagehide", saveDraft);
 </script>
 </body>
 </html>
