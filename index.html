@@ -198,6 +198,32 @@
 
   .saving-indicator { text-align: center; padding: 0.5rem; font-size: 0.6rem; color: #e94560; }
 
+  .swap-trigger { cursor: pointer; position: relative; }
+  .swap-trigger .swap-hint {
+    font-size: 0.45rem; color: #555; text-transform: uppercase; letter-spacing: 0.1em;
+    margin-left: 0.35rem; opacity: 0.7;
+  }
+  .swap-menu {
+    position: absolute; left: 0; top: 100%; z-index: 30;
+    background: #1a1a2e; border: 1px solid rgba(233,69,96,0.3); border-radius: 8px;
+    padding: 0.25rem; margin-top: 0.25rem; min-width: 220px;
+    box-shadow: 0 8px 24px rgba(0,0,0,0.5);
+  }
+  .swap-menu-label {
+    font-size: 0.5rem; color: #666; text-transform: uppercase; letter-spacing: 0.1em;
+    padding: 0.35rem 0.5rem 0.2rem;
+  }
+  .swap-option {
+    display: block; width: 100%; text-align: left; background: none; border: none;
+    color: #ccc; padding: 0.5rem; font-size: 0.7rem; cursor: pointer;
+    border-radius: 6px; font-family: inherit;
+  }
+  .swap-option:active { background: rgba(233,69,96,0.15); }
+  .swap-option.current { color: #e94560; font-weight: 600; }
+  .swap-overlay {
+    position: fixed; top: 0; left: 0; right: 0; bottom: 0; z-index: 25;
+  }
+
   @media (min-width: 500px) {
     body { max-width: 430px; margin: 0 auto; border-left: 1px solid #1a1a2e; border-right: 1px solid #1a1a2e; }
   }
@@ -216,17 +242,23 @@ const PROGRAM = {
         { id:"a2", name:"World's Greatest Stretch", defaultSets:1, hasWeight:false, note:"Open hips & t-spine" },
         { id:"a3", name:"Band Pull-Aparts", defaultSets:2, hasWeight:false, note:"Shoulder activation" },
       ]},
+      { name: "TENDON PREP", exercises: [
+        { id:"a10", name:"Goblet Squat Hold (bottom)", defaultSets:1, hasWeight:false, note:"30s hold, low effort, feed the tendons" },
+        { id:"a11", name:"Push-Up Hold (bottom)", defaultSets:1, hasWeight:false, note:"30s hold, chest 2 inches off floor" },
+      ]},
       { name: "STRENGTH", exercises: [
-        { id:"a4", name:"Goblet Squat", defaultSets:3, hasWeight:true, tempo:"3-1-1", rest:"90s", note:"Depth over load" },
-        { id:"a5", name:"DB Bench Press", defaultSets:3, hasWeight:true, tempo:"3-1-1", rest:"90s", note:"Full ROM" },
-        { id:"a6", name:"Single-Leg RDL (DB)", defaultSets:2, hasWeight:true, tempo:"3-1-1", rest:"60s", note:"Balance + posterior" },
+        { id:"a4", name:"Goblet Squat", defaultSets:3, hasWeight:true, tempo:"3-1-1", rest:"90s", note:"Depth over load", swaps:["Barbell Back Squat","Leg Press","DB Front Squat"] },
+        { id:"a5", name:"DB Bench Press", defaultSets:3, hasWeight:true, tempo:"3-1-1", rest:"90s", note:"Full ROM", swaps:["Barbell Bench Press","Machine Chest Press","Incline DB Press"] },
+        { id:"a6", name:"DB Romanian Deadlift", defaultSets:2, hasWeight:true, tempo:"3-1-2", rest:"60s", note:"Hinge at hips, soft knees", swaps:["Barbell RDL","KB RDL","Cable Pull-Through"] },
       ]},
       { name: "ACCESSORY", exercises: [
-        { id:"a7", name:"Half-Kneeling Cable Press", defaultSets:2, hasWeight:true, tempo:"2-1-2", rest:"60s", note:"Anti-rotation" },
-        { id:"a8", name:"Farmer's Carry", defaultSets:3, hasWeight:true, rest:"60s", note:"Tall posture, grip" },
+        { id:"a7", name:"Half-Kneeling Cable Press", defaultSets:2, hasWeight:true, tempo:"2-1-2", rest:"60s", note:"Anti-rotation", swaps:["DB Shoulder Press","Landmine Press","Standing Cable Press"] },
+        { id:"a8", name:"Farmer's Carry", defaultSets:3, hasWeight:true, rest:"60s", note:"Enter secs not reps, aim 30-40s", swaps:["Trap Bar Carry","Suitcase Carry (1 arm)","Dead Hang"] },
       ]},
       { name: "COOLDOWN", exercises: [
         { id:"a9", name:"90/90 Hip Stretch + Breathing", defaultSets:1, hasWeight:false, note:"4s in, 6s out" },
+        { id:"a12", name:"Couch Stretch (hip flexor)", defaultSets:1, hasWeight:false, note:"60s each side, breathe" },
+        { id:"a13", name:"Hang from bar", defaultSets:1, hasWeight:false, note:"30-60s, decompress spine + shoulders" },
       ]},
     ]
   },
@@ -238,17 +270,23 @@ const PROGRAM = {
         { id:"b2", name:"Dead Bug", defaultSets:2, hasWeight:false, note:"Core activation" },
         { id:"b3", name:"Cat-Cow + T-Spine Rotation", defaultSets:1, hasWeight:false, note:"Spinal mobility" },
       ]},
+      { name: "TENDON PREP", exercises: [
+        { id:"b10", name:"Split Squat Hold (bottom)", defaultSets:1, hasWeight:false, note:"30s each side, low effort" },
+        { id:"b11", name:"RDL Hold (bottom)", defaultSets:1, hasWeight:false, note:"30s, slight knee bend, feel hamstrings" },
+      ]},
       { name: "STRENGTH", exercises: [
-        { id:"b4", name:"Trap Bar Deadlift", defaultSets:3, hasWeight:true, tempo:"3-1-1", rest:"2 min", note:"Hinge pattern" },
-        { id:"b5", name:"Cable Row", defaultSets:3, hasWeight:true, tempo:"2-1-2", rest:"90s", note:"Squeeze at top" },
-        { id:"b6", name:"Bulgarian Split Squat", defaultSets:2, hasWeight:true, tempo:"3-1-1", rest:"60s", note:"BW first" },
+        { id:"b4", name:"Trap Bar Deadlift", defaultSets:3, hasWeight:true, tempo:"3-1-1", rest:"2 min", note:"Hinge pattern", swaps:["KB Deadlift","Barbell Deadlift","DB Sumo Deadlift"] },
+        { id:"b5", name:"Cable Row", defaultSets:3, hasWeight:true, tempo:"2-1-2", rest:"90s", note:"Squeeze at top", swaps:["DB Row","Barbell Row","Machine Row"] },
+        { id:"b6", name:"Reverse Lunge (DB)", defaultSets:2, hasWeight:true, tempo:"3-1-1", rest:"60s", note:"8 each leg, BW first", swaps:["Walking Lunge","Step-Up (DB)","Split Squat"] },
       ]},
       { name: "ACCESSORY", exercises: [
-        { id:"b7", name:"Pallof Press", defaultSets:2, hasWeight:true, tempo:"2-2-2", rest:"60s", note:"Anti-rotation core" },
-        { id:"b8", name:"Turkish Get-Up", defaultSets:2, hasWeight:true, rest:"60s", note:"Light KB or none" },
+        { id:"b7", name:"Pallof Press", defaultSets:2, hasWeight:true, tempo:"2-2-2", rest:"60s", note:"Anti-rotation core", swaps:["Cable Woodchop","Plank (3 x 30-45s)","Ab Wheel Rollout"] },
+        { id:"b8", name:"Cable Face Pull", defaultSets:2, hasWeight:true, tempo:"2-1-2", rest:"60s", note:"Posture + shoulder health", swaps:["Band Pull-Apart","DB Reverse Fly","Prone Y Raise"] },
       ]},
       { name: "COOLDOWN", exercises: [
         { id:"b9", name:"Pigeon Stretch + Box Breathing", defaultSets:1, hasWeight:false, note:"4-4-4-4 pattern" },
+        { id:"b12", name:"Standing Hamstring Stretch", defaultSets:1, hasWeight:false, note:"60s each side, foot on bench" },
+        { id:"b13", name:"Hang from bar", defaultSets:1, hasWeight:false, note:"30-60s, decompress spine + shoulders" },
       ]},
     ]
   }
@@ -274,6 +312,7 @@ let state = {
   sessionRPE: null,
   energyLevel: null,
   sessionNote: "",
+  openSwapMenu: null,
 };
 
 function loadData() {
@@ -345,6 +384,71 @@ function render() {
     case "history": renderHistory(); break;
     case "detail": renderDetail(); break;
   }
+}
+
+function renderSingaporeCountdown() {
+  const target = new Date("2027-02-27T00:00:00");
+  const now = new Date();
+  const diff = target - now;
+  const days = Math.max(0, Math.floor(diff / (1000*60*60*24)));
+  const weeks = Math.floor(days / 7);
+
+  // Running progression phases with date boundaries
+  const phases = [
+    { id: "gym", label: "Gym Only", sub: "Build the habit first. Walk for cardio.", dateEnd: "2026-10-05", color: "#e94560" },
+    { id: "runwalk", label: "Run/Walk", sub: "1 min run, 2 min walk × 8. Twice a week. Shift ratio each week.", dateEnd: "2026-11-30", color: "#f4a261" },
+    { id: "continuous", label: "Running + REHIT", sub: "25-30 min easy runs (conversational pace). Optional: add REHIT as a gym finisher — 2 × 20s all-out bike sprints with 3 min easy pedalling between. Total 10 min.", dateEnd: "2026-12-31", color: "#2a9d8f" },
+    { id: "extend", label: "10K + 4×4 + REHIT", sub: "One long easy run, building 5 min/week. One Norwegian 4×4: 4 min hard (85-95% HR), 3 min walk, ×4 rounds. REHIT on gym days as a finisher.", dateEnd: "2027-01-31", color: "#5c9ce6" },
+    { id: "ready", label: "Singapore Ready", sub: "Comfortable 5-10K. Maintain one 4×4 + REHIT finishers. Taper last week.", dateEnd: "2027-02-27", color: "#4ade80" },
+  ];
+
+  // Determine current phase
+  let currentPhase = phases[phases.length - 1];
+  for (const phase of phases) {
+    if (now <= new Date(phase.dateEnd + "T23:59:59")) {
+      currentPhase = phase;
+      break;
+    }
+  }
+
+  let phaseRows = "";
+  let foundCurrent = false;
+  phases.forEach(p => {
+    const isCurrent = p.id === currentPhase.id;
+    const isPast = !foundCurrent && !isCurrent;
+    if (isCurrent) foundCurrent = true;
+    const opacity = isCurrent ? "1" : isPast ? "0.35" : "0.5";
+    const border = isCurrent ? `border-left:3px solid ${p.color};padding-left:0.6rem;margin-left:-0.6rem` : "";
+
+    phaseRows += `<div style="padding:0.4rem 0;opacity:${opacity};${border}">
+      <div style="display:flex;align-items:center;gap:0.5rem">
+        <span style="font-size:0.5rem;width:6px;height:6px;border-radius:50%;background:${p.color};display:inline-block;flex-shrink:0"></span>
+        <span style="font-size:0.65rem;font-weight:${isCurrent?'700':'400'};color:${isCurrent?p.color:'#aaa'}">${p.label}</span>
+        ${isCurrent?'<span style="font-size:0.5rem;color:#555;background:rgba(255,255,255,0.06);padding:0.1rem 0.35rem;border-radius:3px">NOW</span>':''}
+      </div>
+      <div style="font-size:0.55rem;color:#666;margin-left:1rem;margin-top:0.15rem">${p.sub}</div>
+    </div>`;
+  });
+
+  return `
+    <div style="margin:1rem 1rem 0;background:linear-gradient(135deg,rgba(74,222,128,0.06) 0%,rgba(92,156,230,0.06) 100%);border-radius:10px;padding:1rem;border:1px solid rgba(74,222,128,0.15)">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:0.75rem">
+        <div>
+          <div style="font-size:0.6rem;color:#4ade80;text-transform:uppercase;letter-spacing:0.15em;font-weight:700">Singapore 5/10K</div>
+          <div style="font-size:0.55rem;color:#666;margin-top:0.15rem">27 Feb 2027</div>
+        </div>
+        <div style="text-align:right">
+          <div style="font-size:1.4rem;font-weight:800;color:#4ade80">${days}</div>
+          <div style="font-size:0.5rem;color:#666;text-transform:uppercase;letter-spacing:0.1em">days (${weeks} wks)</div>
+        </div>
+      </div>
+      <div style="height:1px;background:rgba(255,255,255,0.06);margin-bottom:0.6rem"></div>
+      <div style="font-size:0.55rem;color:#555;text-transform:uppercase;letter-spacing:0.1em;margin-bottom:0.5rem">Running Progression</div>
+      ${phaseRows}
+      <div style="height:1px;background:rgba(255,255,255,0.06);margin:0.6rem 0"></div>
+      <div style="font-size:0.55rem;color:#555;font-style:italic">The test: can you hold a conversation while running? That's the pace.</div>
+    </div>
+  `;
 }
 
 function renderHome() {
@@ -422,6 +526,8 @@ function renderHome() {
       <div style="font-size:0.6rem;color:#555;text-transform:uppercase;letter-spacing:0.15em;margin-bottom:0.75rem">Phase 1 Overview</div>
       ${overviewRows}
     </div>
+
+    ${renderSingaporeCountdown()}
   `;
 }
 
@@ -436,7 +542,21 @@ function renderWorkout() {
     section.exercises.forEach(ex => {
       const exData = s.exercises[ex.id];
       const last = getLastWeight(ex.id);
+      const displayName = s.swaps[ex.id] || ex.name;
+      const isSwapped = !!s.swaps[ex.id];
       const metaParts = [ex.tempo?`Tempo: ${ex.tempo}`:'', ex.rest?`Rest: ${ex.rest}`:'', ex.note].filter(Boolean).join(" • ");
+      const hasSwaps = ex.swaps && ex.swaps.length > 0;
+      const menuOpen = state.openSwapMenu === ex.id;
+
+      let swapMenuHTML = "";
+      if (hasSwaps && menuOpen) {
+        let optionsHTML = `<button class="swap-option ${!isSwapped?'current':''}" onclick="swapExercise('${ex.id}',null)">${ex.name}${!isSwapped?' ✓':''}</button>`;
+        ex.swaps.forEach(sw => {
+          const isCurrent = s.swaps[ex.id] === sw;
+          optionsHTML += `<button class="swap-option ${isCurrent?'current':''}" onclick="swapExercise('${ex.id}','${sw}')">${sw}${isCurrent?' ✓':''}</button>`;
+        });
+        swapMenuHTML = `<div class="swap-overlay" onclick="closeSwapMenu()"></div><div class="swap-menu"><div class="swap-menu-label">Same pattern — swap to:</div>${optionsHTML}</div>`;
+      }
 
       let setsHTML = "";
       if (ex.hasWeight) {
@@ -458,8 +578,9 @@ function renderWorkout() {
 
       sectionsHTML += `<div class="exercise-row">
         <div class="exercise-header">
-          <div>
-            <div class="exercise-name">${ex.name}</div>
+          <div class="swap-trigger" style="position:relative" ${hasSwaps?`onclick="toggleSwapMenu('${ex.id}')"`:''}> 
+            <div class="exercise-name">${displayName}${hasSwaps?'<span class="swap-hint">⇄ swap</span>':''}</div>
+            ${swapMenuHTML}
             <div class="exercise-meta">${metaParts}</div>
           </div>
           ${last ? `<div class="exercise-last">Last: ${last}kg</div>` : ''}
@@ -585,7 +706,7 @@ function renderDetail() {
         setsHTML = `<div style="font-size:0.6rem;color:${done?'#e94560':'#555'}">${done?'✓ Completed':'— Skipped'}</div>`;
       }
       sectionsHTML += `<div style="padding:0.6rem 1.25rem;border-bottom:1px solid rgba(255,255,255,0.03)">
-        <div style="font-size:0.75rem;font-weight:600;margin-bottom:0.3rem">${ex.name}</div>
+        <div style="font-size:0.75rem;font-weight:600;margin-bottom:0.3rem">${(s.swaps&&s.swaps[ex.id])||ex.name}${s.swaps&&s.swaps[ex.id]?'<span style="font-size:0.5rem;color:#555;margin-left:0.4rem">swapped</span>':''}</div>
         ${setsHTML}
       </div>`;
     });
@@ -636,6 +757,7 @@ function startWorkout(dayKey) {
     dayKey, dayLabel: day.label,
     week: state.currentWeek,
     exercises: {},
+    swaps: {},
     note: "", rpe: null, energy: null, completed: false,
   };
   day.sections.forEach(section => {
@@ -670,6 +792,26 @@ function toggleSet(exId, idx) {
 
 function addSet(exId) {
   state.activeSession.exercises[exId].sets.push({weight:"",reps:"",done:false});
+  render();
+}
+
+function toggleSwapMenu(exId) {
+  state.openSwapMenu = state.openSwapMenu === exId ? null : exId;
+  render();
+}
+
+function closeSwapMenu() {
+  state.openSwapMenu = null;
+  render();
+}
+
+function swapExercise(exId, newName) {
+  if (newName) {
+    state.activeSession.swaps[exId] = newName;
+  } else {
+    delete state.activeSession.swaps[exId];
+  }
+  state.openSwapMenu = null;
   render();
 }
 
