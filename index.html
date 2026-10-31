@@ -155,6 +155,27 @@
   .floating-finish {
     position: fixed; bottom: 0; left: 0; right: 0; padding: 1rem;
     background: linear-gradient(transparent, #0a0a0f 30%); z-index: 10;
+    max-width: 430px; margin: 0 auto;
+  }
+  .rest-bar {
+    display: none; margin-bottom: 0.6rem; background: #1a1a2e;
+    border: 1px solid rgba(92,156,230,0.4); border-radius: 12px; padding: 0.6rem 0.75rem;
+  }
+  .rest-bar.done { border-color: #4ade80; background: rgba(74,222,128,0.12); }
+  .rest-top { display: flex; align-items: center; justify-content: space-between; gap: 0.5rem; }
+  .rest-label { font-size: 0.6rem; color: #888; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .rest-time { font-size: 1.6rem; font-weight: 800; color: #5c9ce6; font-variant-numeric: tabular-nums; line-height: 1.1; }
+  .rest-bar.done .rest-time { color: #4ade80; }
+  .rest-btns { display: flex; gap: 0.35rem; flex-shrink: 0; }
+  .rest-btn {
+    background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.12); color: #ccc;
+    border-radius: 8px; padding: 0.55rem 0.6rem; font-size: 0.7rem; cursor: pointer; min-width: 2.75rem;
+  }
+  .rest-progress { height: 3px; background: rgba(255,255,255,0.08); border-radius: 2px; margin-top: 0.45rem; overflow: hidden; }
+  .rest-progress div { height: 100%; background: #5c9ce6; width: 100%; }
+  .btn-rest-chip {
+    margin-top: 0.35rem; margin-left: 0.75rem; background: none; border: none; color: #5c9ce6;
+    cursor: pointer; font-size: 0.6rem; padding: 0.2rem 0;
   }
 
   .history-item {
@@ -370,6 +391,7 @@ function loadData() {
         state.energyLevel = d.energyLevel ?? null;
         state.sessionNote = d.sessionNote || "";
         state.editingId = d.editingId || null;
+        state.rest = d.rest && d.rest.end > Date.now() ? d.rest : null;
         state.view = "workout";
       }
     }
@@ -386,6 +408,7 @@ function saveDraft() {
       energyLevel: state.energyLevel,
       sessionNote: state.sessionNote,
       editingId: state.editingId,
+      rest: state.rest,
     }));
   } catch(e) {}
 }
@@ -423,7 +446,8 @@ function saveData() {
 }
 
 function todayStr() {
-  return new Date().toISOString().split("T")[0];
+  const d = new Date(); // local date, not UTC (UTC would date Brisbane morning sessions as the day before)
+  return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`;
 }
 
 function formatDate(s) {
@@ -472,6 +496,8 @@ function render() {
     case "history": renderHistory(); break;
     case "detail": renderDetail(); break;
   }
+  updateRestBar();
+  syncWakeLock();
 }
 
 function renderSingaporeCountdown() {
@@ -653,7 +679,11 @@ function renderWorkout() {
             <button class="set-check ${checkClass}" onclick="toggleSet('${ex.id}',${idx})">${ICO.check}</button>
           </div>`;
         });
-        setsHTML += `<button class="btn-add-set" onclick="addSet('${ex.id}')">${ICO.plus} Add set</button>`;
+        const restSecs = parseRest(ex.rest);
+        setsHTML += `<div style="display:flex;align-items:center">
+          <button class="btn-add-set" onclick="addSet('${ex.id}')">${ICO.plus} Add set</button>
+          ${restSecs ? `<button class="btn-rest-chip" onclick="startRest(${restSecs}, '${ex.id}')">⏱ Rest ${formatClock(restSecs)}</button>` : ''}
+        </div>`;
       } else {
         const checkClass = exData.sets[0]?.done ? "checked" : "";
         setsHTML = `<button class="btn-done-toggle ${checkClass}" onclick="toggleSet('${ex.id}',0)">${ICO.check} ${exData.sets[0]?.done?'Done':'Mark done'}</button>`;
@@ -730,9 +760,23 @@ function renderWorkout() {
     </div>
 
     <div class="floating-finish">
+      <div class="rest-bar" id="rest-bar">
+        <div class="rest-top">
+          <div style="min-width:0">
+            <div class="rest-label" id="rest-label">Rest</div>
+            <div class="rest-time" id="rest-time">0:00</div>
+          </div>
+          <div class="rest-btns">
+            <button class="rest-btn" onclick="adjustRest(-15)">−15</button>
+            <button class="rest-btn" onclick="adjustRest(15)">+15</button>
+            <button class="rest-btn" onclick="skipRest()">Skip</button>
+          </div>
+        </div>
+        <div class="rest-progress"><div id="rest-progress"></div></div>
+      </div>
       <button class="btn-primary" onclick="finishWorkout()">${editing?'SAVE CHANGES':'FINISH & SAVE SESSION'}</button>
     </div>
-    <div style="height:5rem"></div>
+    <div style="height:10rem"></div>
     ${sheetHTML}
   `;
 }
@@ -776,7 +820,13 @@ function renderHistory() {
       </div>
     </div>
     ${items}
-    ${state.sessions.length ? `<button class="btn-reset" onclick="resetAll()">Delete all history and start fresh</button>` : ''}
+    ${state.sessions.length ? `
+      <div style="padding:1rem 1rem 0">
+        <button class="btn-primary" onclick="exportForReview()">Copy training log for Claude</button>
+        <div id="export-status" style="font-size:0.6rem;color:#888;text-align:center;margin-top:0.5rem">Copies every session as text. Paste it into a chat with Claude.</div>
+        <textarea id="export-fallback" class="notes-textarea" rows="8" style="display:none;margin-top:0.5rem" readonly></textarea>
+      </div>
+      <button class="btn-reset" onclick="resetAll()">Delete all history and start fresh</button>` : ''}
   `;
 }
 
@@ -899,6 +949,11 @@ function updateSet(exId, idx, field, value) {
 function toggleSet(exId, idx) {
   const set = state.activeSession.exercises[exId].sets[idx];
   set.done = !set.done;
+  if (set.done && !state.editingId) {
+    const ex = findExercise(state.activeDay, exId);
+    const secs = ex && ex.hasWeight ? parseRest(ex.rest) : 0;
+    if (secs) startRest(secs, exId, true);
+  }
   saveDraft();
   render();
 }
@@ -935,6 +990,7 @@ function setRPE(val) { state.sessionRPE = val; saveDraft(); render(); }
 function setEnergy(val) { state.energyLevel = val; saveDraft(); render(); }
 
 function endActiveSession() {
+  state.rest = null; restDoneUntil = 0; updateRestBar();
   state.activeSession = null; state.activeDay = null;
   state.editingId = null; state.openSwapMenu = null;
   clearDraft();
@@ -998,6 +1054,52 @@ function editSession(id) {
   window.scrollTo(0,0);
 }
 
+function buildExportText() {
+  const sorted = [...state.sessions].sort((a,b) => a.date.localeCompare(b.date) || a.id.localeCompare(b.id));
+  const lines = [`THE PROGRAM — training log (${sorted.length} sessions, exported ${todayStr()})`, ""];
+  sorted.forEach(s => {
+    const day = PROGRAM[s.dayKey];
+    const wt = WEEK_TARGETS[s.week] || {};
+    lines.push(`${formatDate(s.date)} ${s.date.slice(0,4)} | ${s.dayLabel} | Week ${s.week} (target ${wt.reps||'?'} reps @ RPE ${wt.rpe||'?'}) | Session RPE ${s.rpe ?? '-'} | Energy ${s.energy ?? '-'}`);
+    const skipped = [];
+    day.sections.forEach(sec => {
+      sec.exercises.forEach(ex => {
+        const d = s.exercises[ex.id];
+        if (!d) return;
+        const name = (s.swaps && s.swaps[ex.id]) ? `${s.swaps[ex.id]} (swapped from ${ex.name})` : ex.name;
+        if (ex.hasWeight) {
+          const sets = d.sets.filter(x => x.weight || x.reps)
+            .map(x => `${x.weight||'BW'}kg×${x.reps||'?'}${ex.unit==='secs'?'s':''}`);
+          lines.push(`  ${name}: ${sets.length ? sets.join(", ") : "not logged"}`);
+        } else if (!d.sets[0]?.done) {
+          skipped.push(name);
+        }
+      });
+    });
+    if (skipped.length) lines.push(`  Skipped: ${skipped.join(", ")}`);
+    if (s.note) lines.push(`  Notes: ${s.note.replace(/\s+/g," ")}`);
+    lines.push("");
+  });
+  return lines.join("\n");
+}
+
+function exportForReview() {
+  const text = buildExportText();
+  const status = document.getElementById("export-status");
+  const fallback = document.getElementById("export-fallback");
+  const showFallback = () => {
+    fallback.style.display = "block"; fallback.value = text; fallback.focus(); fallback.select();
+    status.textContent = "Couldn't copy automatically. Select all the text below and copy it.";
+  };
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(text)
+      .then(() => { status.textContent = "Copied. Paste it into a chat with Claude."; status.style.color = "#4ade80"; })
+      .catch(showFallback);
+  } else {
+    showFallback();
+  }
+}
+
 function resetAll() {
   if (!confirm("Delete ALL saved sessions and start fresh at Week 1? This can't be undone.")) return;
   state.sessions = [];
@@ -1022,9 +1124,123 @@ function deleteSession(id) {
   }
 }
 
+
+// ==================== REST TIMER ====================
+// Timer is based on an end timestamp, so it stays correct even if the phone throttles the page.
+let restDoneUntil = 0;   // show "Go" state until this time after rest finishes
+let audioCtx = null;
+let wakeLock = null;
+
+function parseRest(str) {
+  if (!str) return 0;
+  const min = /(\d+(?:\.\d+)?)\s*min/i.exec(str);
+  if (min) return Math.round(parseFloat(min[1]) * 60);
+  const sec = /(\d+)\s*s/i.exec(str);
+  return sec ? parseInt(sec[1], 10) : 0;
+}
+
+function formatClock(secs) {
+  secs = Math.max(0, Math.ceil(secs));
+  return `${Math.floor(secs/60)}:${String(secs%60).padStart(2,"0")}`;
+}
+
+function unlockAudio() {
+  try {
+    if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    if (audioCtx.state === "suspended") audioCtx.resume();
+  } catch(e) {}
+}
+
+function beep(times) {
+  if (!audioCtx) return;
+  try {
+    for (let i = 0; i < times; i++) {
+      const t = audioCtx.currentTime + i * 0.25;
+      const osc = audioCtx.createOscillator(), gain = audioCtx.createGain();
+      osc.frequency.value = 880; osc.type = "sine";
+      gain.gain.setValueAtTime(0.0001, t);
+      gain.gain.exponentialRampToValueAtTime(0.4, t + 0.02);
+      gain.gain.exponentialRampToValueAtTime(0.0001, t + 0.18);
+      osc.connect(gain).connect(audioCtx.destination);
+      osc.start(t); osc.stop(t + 0.2);
+    }
+  } catch(e) {}
+}
+
+function startRest(secs, exId, auto) {
+  unlockAudio();
+  const ex = findExercise(state.activeDay, exId);
+  const name = ex ? ((state.activeSession.swaps && state.activeSession.swaps[exId]) || ex.name) : "";
+  state.rest = { end: Date.now() + secs * 1000, total: secs, label: name };
+  restDoneUntil = 0;
+  saveDraft();
+  updateRestBar();
+}
+
+function adjustRest(delta) {
+  if (!state.rest) return;
+  state.rest.end += delta * 1000;
+  state.rest.total = Math.max(state.rest.total + delta, 1);
+  if (state.rest.end <= Date.now()) { skipRest(); return; }
+  saveDraft();
+  updateRestBar();
+}
+
+function skipRest() {
+  state.rest = null; restDoneUntil = 0;
+  saveDraft();
+  updateRestBar();
+}
+
+function restTick() {
+  if (state.rest && Date.now() >= state.rest.end) {
+    state.rest = null;
+    restDoneUntil = Date.now() + 4000;
+    try { if (navigator.vibrate) navigator.vibrate([300, 150, 300, 150, 300]); } catch(e) {}
+    beep(3);
+    saveDraft();
+  }
+  updateRestBar();
+}
+
+function updateRestBar() {
+  const bar = document.getElementById("rest-bar");
+  if (!bar) return;
+  const now = Date.now();
+  if (state.rest) {
+    const remaining = (state.rest.end - now) / 1000;
+    bar.style.display = "block"; bar.classList.remove("done");
+    document.getElementById("rest-label").textContent = `Rest${state.rest.label ? " — " + state.rest.label : ""}`;
+    document.getElementById("rest-time").textContent = formatClock(remaining);
+    document.getElementById("rest-progress").style.width = `${Math.max(0, Math.min(100, remaining / state.rest.total * 100))}%`;
+  } else if (restDoneUntil > now) {
+    bar.style.display = "block"; bar.classList.add("done");
+    document.getElementById("rest-label").textContent = "Rest done";
+    document.getElementById("rest-time").textContent = "Go";
+    document.getElementById("rest-progress").style.width = "0%";
+  } else {
+    bar.style.display = "none";
+  }
+}
+
+// Keep the screen on during a workout so the timer can buzz (a locked phone can't).
+async function syncWakeLock() {
+  const want = state.view === "workout" && !!state.activeSession && document.visibilityState === "visible";
+  try {
+    if (want && !wakeLock && navigator.wakeLock) {
+      wakeLock = await navigator.wakeLock.request("screen");
+      wakeLock.addEventListener("release", () => { wakeLock = null; });
+    } else if (!want && wakeLock) {
+      await wakeLock.release(); wakeLock = null;
+    }
+  } catch(e) { wakeLock = null; }
+}
+document.addEventListener("visibilitychange", syncWakeLock);
+
 // ==================== INIT ====================
 loadData();
 render();
+setInterval(restTick, 250);
 // Belt and braces: save the in-progress session whenever the app is hidden (screen lock, app switch)
 document.addEventListener("visibilitychange", () => { if (document.hidden) saveDraft(); });
 window.addEventListener("pagehide", saveDraft);
