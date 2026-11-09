@@ -96,6 +96,7 @@
   }
   .exercise-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 0.35rem; }
   .exercise-name { font-size: 0.8rem; font-weight: 600; }
+  .exercise-target { font-size: 0.7rem; font-weight: 700; color: #e94560; margin-top: 0.15rem; }
   .exercise-meta { font-size: 0.55rem; color: #666; margin-top: 0.15rem; }
   .exercise-last {
     font-size: 0.55rem; color: #555; background: rgba(255,255,255,0.04);
@@ -157,6 +158,17 @@
     background: linear-gradient(transparent, #0a0a0f 30%); z-index: 10;
     max-width: 430px; margin: 0 auto;
   }
+  .sync-panel { margin: 1.5rem 1rem 2rem; border: 1px solid rgba(255,255,255,0.08); border-radius: 10px; background: rgba(255,255,255,0.02); }
+  .sync-panel summary { padding: 0.8rem 0.9rem; cursor: pointer; font-size: 0.75rem; font-weight: 700; list-style: none; display: flex; justify-content: space-between; gap: 0.5rem; }
+  .sync-panel summary::-webkit-details-marker { display: none; }
+  .sync-body { padding: 0 0.9rem 0.9rem; }
+  .sync-status { font-size: 0.6rem; font-weight: 400; color: #888; text-align: right; }
+  .sync-status.ok { color: #4ade80; } .sync-status.warn { color: #f4a261; } .sync-status.err { color: #ff5555; }
+  .sync-label { font-size: 0.6rem; color: #888; margin: 0.6rem 0 0.25rem; display: block; }
+  .sync-input { width: 100%; background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.1); border-radius: 6px; color: #e0e0e0; padding: 0.55rem; font-family: inherit; font-size: 0.7rem; }
+  .sync-btns { display: flex; gap: 0.5rem; margin-top: 0.75rem; flex-wrap: wrap; }
+  .sync-btn { flex: 1; min-width: 7rem; background: rgba(92,156,230,0.12); border: 1px solid rgba(92,156,230,0.3); color: #5c9ce6; border-radius: 8px; padding: 0.6rem; font-size: 0.65rem; cursor: pointer; font-family: inherit; }
+  .sync-help { font-size: 0.6rem; color: #777; line-height: 1.5; margin-top: 0.6rem; }
   .rest-bar {
     display: none; margin-bottom: 0.6rem; background: #1a1a2e;
     border: 1px solid rgba(92,156,230,0.4); border-radius: 12px; padding: 0.6rem 0.75rem;
@@ -275,16 +287,16 @@ const PROGRAM = {
     label: "DAY A", subtitle: "Push / Squat",
     sections: [
       { name: "WARM-UP", exercises: [
-        { id:"a1", name:"Foam Roll — quads, t-spine, lats", defaultSets:1, hasWeight:false, note:"Find tight spots" },
-        { id:"a2", weeks:"odd", name:"World's Greatest Stretch", defaultSets:1, hasWeight:false, note:"Open hips & t-spine" },
-        { id:"a2b", weeks:"even", name:"Cossack Squat (bodyweight)", defaultSets:1, hasWeight:false, note:"5 each side, hold a rack, only as deep as comfortable" },
-        { id:"a3", name:"Band Pull-Aparts", defaultSets:2, hasWeight:false, note:"Shoulder activation" },
+        { id:"a1", target:"About 1 min per area", name:"Foam Roll — quads, t-spine, lats", defaultSets:1, hasWeight:false, note:"Find tight spots" },
+        { id:"a2", target:"3 each side", weeks:"odd", name:"World's Greatest Stretch", defaultSets:1, hasWeight:false, note:"Open hips & t-spine" },
+        { id:"a2b", target:"5 each side", weeks:"even", name:"Cossack Squat (bodyweight)", defaultSets:1, hasWeight:false, note:"5 each side, hold a rack, only as deep as comfortable" },
+        { id:"a3", target:"2 × 15", name:"Band Pull-Aparts", defaultSets:2, hasWeight:false, note:"Shoulder activation" },
       ]},
       { name: "TENDON PREP", exercises: [
-        { id:"a10", weeks:"odd", name:"Goblet Squat Hold (bottom)", defaultSets:1, hasWeight:false, note:"30s hold, low effort, feed the tendons" },
-        { id:"a10b", weeks:"even", name:"Wall Sit", defaultSets:1, hasWeight:false, note:"45s, thighs parallel, knee tendon prep" },
-        { id:"a11", weeks:"odd", name:"Push-Up Hold (bottom)", defaultSets:1, hasWeight:false, note:"30s, chest just off floor. Hands on a bench if too hard" },
-        { id:"a11b", weeks:"even", name:"Push-Up Hold (halfway)", defaultSets:1, hasWeight:false, note:"30s hold, elbows at 90°" },
+        { id:"a10", target:"1 × 30s", weeks:"odd", name:"Goblet Squat Hold (bottom)", defaultSets:1, hasWeight:false, note:"30s hold, low effort, feed the tendons" },
+        { id:"a10b", target:"1 × 45s", weeks:"even", name:"Wall Sit", defaultSets:1, hasWeight:false, note:"45s, thighs parallel, knee tendon prep" },
+        { id:"a11", target:"1 × 30s", weeks:"odd", name:"Push-Up Hold (bottom)", defaultSets:1, hasWeight:false, note:"30s, chest just off floor. Hands on a bench if too hard" },
+        { id:"a11b", target:"1 × 30s", weeks:"even", name:"Push-Up Hold (halfway)", defaultSets:1, hasWeight:false, note:"30s hold, elbows at 90°" },
       ]},
       { name: "STRENGTH", exercises: [
         { id:"a4", name:"Goblet Squat", anchor:true, defaultSets:3, hasWeight:true, tempo:"3s down, 1s pause", rest:"90s", note:"Depth over load", swaps:["Barbell Back Squat","Leg Press","DB Front Squat"] },
@@ -293,16 +305,16 @@ const PROGRAM = {
         { id:"a6b", weeks:"even", name:"DB Hip Thrust", defaultSets:2, hasWeight:true, tempo:"2s squeeze at top", rest:"60s", note:"Upper back on bench, chin tucked", swaps:["Barbell Hip Thrust","DB Glute Bridge (floor)","Cable Pull-Through"] },
       ]},
       { name: "ACCESSORY", exercises: [
-        { id:"a7", weeks:"odd", name:"Half-Kneeling Cable Press", defaultSets:2, hasWeight:true, tempo:"2s return", rest:"60s", note:"8 each side, don't let the cable twist you", swaps:["DB Shoulder Press","Landmine Press","Standing Cable Press"] },
-        { id:"a7b", weeks:"even", name:"Half-Kneeling Landmine Press", defaultSets:2, hasWeight:true, tempo:"2s down", rest:"60s", note:"8 each arm, ribs down", swaps:["Half-Kneeling DB Press","Seated DB Shoulder Press","Standing Cable Press"] },
-        { id:"a8", weeks:"odd", name:"Farmer's Carry", unit:"secs", defaultSets:3, hasWeight:true, rest:"60s", note:"Heavy DB each hand, tall posture, 30-40s", swaps:["Trap Bar Carry","Suitcase Carry (1 arm)","Dead Hang"] },
-        { id:"a8b", weeks:"even", name:"Suitcase Carry (1 arm)", unit:"secs", defaultSets:3, hasWeight:true, rest:"60s", note:"30s each side, don't lean", swaps:["Farmer's Carry","Trap Bar Carry","Dead Hang"] },
+        { id:"a7", reps:"8 each side", weeks:"odd", name:"Half-Kneeling Cable Press", defaultSets:2, hasWeight:true, tempo:"2s return", rest:"60s", note:"8 each side, don't let the cable twist you", swaps:["DB Shoulder Press","Landmine Press","Standing Cable Press"] },
+        { id:"a7b", reps:"8 each arm", weeks:"even", name:"Half-Kneeling Landmine Press", defaultSets:2, hasWeight:true, tempo:"2s down", rest:"60s", note:"8 each arm, ribs down", swaps:["Half-Kneeling DB Press","Seated DB Shoulder Press","Standing Cable Press"] },
+        { id:"a8", reps:"30-40s", weeks:"odd", name:"Farmer's Carry", unit:"secs", defaultSets:3, hasWeight:true, rest:"60s", note:"Heavy DB each hand, tall posture, 30-40s", swaps:["Trap Bar Carry","Suitcase Carry (1 arm)","Dead Hang"] },
+        { id:"a8b", reps:"30s each side", weeks:"even", name:"Suitcase Carry (1 arm)", unit:"secs", defaultSets:3, hasWeight:true, rest:"60s", note:"30s each side, don't lean", swaps:["Farmer's Carry","Trap Bar Carry","Dead Hang"] },
       ]},
       { name: "COOLDOWN", exercises: [
-        { id:"a9", weeks:"odd", name:"90/90 Hip Stretch + Breathing", defaultSets:1, hasWeight:false, note:"4s in, 6s out" },
-        { id:"a9b", weeks:"even", name:"Deep Squat Hold + Breathing", defaultSets:1, hasWeight:false, note:"60s, hold a rack for balance, 4s in 6s out" },
-        { id:"a12", name:"Couch Stretch (hip flexor)", defaultSets:1, hasWeight:false, note:"60s each side, breathe" },
-        { id:"a13", name:"Hang from bar", defaultSets:1, hasWeight:false, note:"30-60s, decompress spine + shoulders" },
+        { id:"a9", target:"1 min each side", weeks:"odd", name:"90/90 Hip Stretch + Breathing", defaultSets:1, hasWeight:false, note:"4s in, 6s out" },
+        { id:"a9b", target:"1 × 60s", weeks:"even", name:"Deep Squat Hold + Breathing", defaultSets:1, hasWeight:false, note:"60s, hold a rack for balance, 4s in 6s out" },
+        { id:"a12", target:"60s each side", name:"Couch Stretch (hip flexor)", defaultSets:1, hasWeight:false, note:"60s each side, breathe" },
+        { id:"a13", target:"1 × 30-60s", name:"Hang from bar", defaultSets:1, hasWeight:false, note:"30-60s, decompress spine + shoulders" },
       ]},
     ]
   },
@@ -310,35 +322,35 @@ const PROGRAM = {
     label: "DAY B", subtitle: "Pull / Hinge",
     sections: [
       { name: "WARM-UP", exercises: [
-        { id:"b1", name:"Foam Roll — glutes, adductors, calves", defaultSets:1, hasWeight:false, note:"Breathe into it" },
-        { id:"b2", weeks:"odd", name:"Dead Bug", defaultSets:2, hasWeight:false, note:"Core activation" },
-        { id:"b2b", weeks:"even", name:"Bird Dog", defaultSets:2, hasWeight:false, note:"5 each side, 3s hold, hips level" },
-        { id:"b3", weeks:"odd", name:"Cat-Cow + T-Spine Rotation", defaultSets:1, hasWeight:false, note:"Spinal mobility" },
-        { id:"b3b", weeks:"even", name:"Standing Hip CARs", defaultSets:1, hasWeight:false, note:"3 slow circles each way, each leg" },
+        { id:"b1", target:"About 1 min per area", name:"Foam Roll — glutes, adductors, calves", defaultSets:1, hasWeight:false, note:"Breathe into it" },
+        { id:"b2", target:"2 × 5 each side", weeks:"odd", name:"Dead Bug", defaultSets:2, hasWeight:false, note:"Core activation" },
+        { id:"b2b", target:"2 × 5 each side", weeks:"even", name:"Bird Dog", defaultSets:2, hasWeight:false, note:"5 each side, 3s hold, hips level" },
+        { id:"b3", target:"8 slow reps + 5 rotations each side", weeks:"odd", name:"Cat-Cow + T-Spine Rotation", defaultSets:1, hasWeight:false, note:"Spinal mobility" },
+        { id:"b3b", target:"3 each way, each leg", weeks:"even", name:"Standing Hip CARs", defaultSets:1, hasWeight:false, note:"3 slow circles each way, each leg" },
       ]},
       { name: "TENDON PREP", exercises: [
-        { id:"b10", weeks:"odd", name:"Split Squat Hold (bottom)", defaultSets:1, hasWeight:false, note:"30s each side, low effort" },
-        { id:"b10b", weeks:"even", name:"Single-Leg Calf Raise Hold (top)", defaultSets:1, hasWeight:false, note:"30s each side, Achilles prep for running" },
-        { id:"b11", weeks:"odd", name:"RDL Hold (bottom)", defaultSets:1, hasWeight:false, note:"30s, slight knee bend, feel hamstrings" },
-        { id:"b11b", weeks:"even", name:"Glute Bridge Hold", defaultSets:1, hasWeight:false, note:"30-45s, squeeze glutes, ribs down" },
+        { id:"b10", target:"30s each side", weeks:"odd", name:"Split Squat Hold (bottom)", defaultSets:1, hasWeight:false, note:"30s each side, low effort" },
+        { id:"b10b", target:"30s each side", weeks:"even", name:"Single-Leg Calf Raise Hold (top)", defaultSets:1, hasWeight:false, note:"30s each side, Achilles prep for running" },
+        { id:"b11", target:"1 × 30s", weeks:"odd", name:"RDL Hold (bottom)", defaultSets:1, hasWeight:false, note:"30s, slight knee bend, feel hamstrings" },
+        { id:"b11b", target:"1 × 30-45s", weeks:"even", name:"Glute Bridge Hold", defaultSets:1, hasWeight:false, note:"30-45s, squeeze glutes, ribs down" },
       ]},
       { name: "STRENGTH", exercises: [
         { id:"b4", name:"Trap Bar Deadlift", anchor:true, defaultSets:3, hasWeight:true, tempo:"Controlled lower", rest:"2 min", note:"Push the floor away, bar stays close", swaps:["KB Deadlift","Barbell Deadlift","DB Sumo Deadlift"] },
         { id:"b5", name:"Cable Row", anchor:true, defaultSets:3, hasWeight:true, tempo:"1s squeeze at chest", rest:"90s", note:"Shoulder blades back, no leaning", swaps:["DB Row","Barbell Row","Machine Row"] },
-        { id:"b6", weeks:"odd", name:"Reverse Lunge (DB)", defaultSets:2, hasWeight:true, tempo:"3s down", rest:"60s", note:"8 each leg, bodyweight first session", swaps:["Walking Lunge","Step-Up (DB)","Split Squat"] },
-        { id:"b6b", weeks:"even", name:"DB Step-Up", defaultSets:2, hasWeight:true, tempo:"3s lower", rest:"60s", note:"Knee-height box, 8 each leg, drive through front heel", swaps:["Bulgarian Split Squat","Reverse Lunge (DB)","Lateral Step-Up"] },
+        { id:"b6", reps:"8 each leg", weeks:"odd", name:"Reverse Lunge (DB)", defaultSets:2, hasWeight:true, tempo:"3s down", rest:"60s", note:"8 each leg, bodyweight first session", swaps:["Walking Lunge","Step-Up (DB)","Split Squat"] },
+        { id:"b6b", reps:"8 each leg", weeks:"even", name:"DB Step-Up", defaultSets:2, hasWeight:true, tempo:"3s lower", rest:"60s", note:"Knee-height box, 8 each leg, drive through front heel", swaps:["Bulgarian Split Squat","Reverse Lunge (DB)","Lateral Step-Up"] },
       ]},
       { name: "ACCESSORY", exercises: [
-        { id:"b7", weeks:"odd", name:"Pallof Press", defaultSets:2, hasWeight:true, tempo:"2s hold arms out", rest:"60s", note:"10 each side, resist the twist", swaps:["Cable Woodchop","Plank (3 x 30-45s)","Ab Wheel Rollout"] },
-        { id:"b7b", weeks:"even", name:"Lat Pulldown", defaultSets:2, hasWeight:true, tempo:"3s return", rest:"60s", note:"10-12 reps, pull to upper chest", swaps:["Assisted Pull-Up","Single-Arm Cable Pulldown","Band-Assisted Chin-Up"] },
-        { id:"b8", weeks:"odd", name:"Cable Face Pull", defaultSets:2, hasWeight:true, tempo:"1s pause at face", rest:"60s", note:"12-15 reps, light, posture + shoulder health", swaps:["Band Pull-Apart","DB Reverse Fly","Prone Y Raise"] },
-        { id:"b8b", weeks:"even", name:"Side Plank", defaultSets:1, hasWeight:false, note:"2 rounds × 30s each side" },
+        { id:"b7", reps:"10 each side", weeks:"odd", name:"Pallof Press", defaultSets:2, hasWeight:true, tempo:"2s hold arms out", rest:"60s", note:"10 each side, resist the twist", swaps:["Cable Woodchop","Plank (3 x 30-45s)","Ab Wheel Rollout"] },
+        { id:"b7b", reps:"10-12", weeks:"even", name:"Lat Pulldown", defaultSets:2, hasWeight:true, tempo:"3s return", rest:"60s", note:"10-12 reps, pull to upper chest", swaps:["Assisted Pull-Up","Single-Arm Cable Pulldown","Band-Assisted Chin-Up"] },
+        { id:"b8", reps:"12-15", weeks:"odd", name:"Cable Face Pull", defaultSets:2, hasWeight:true, tempo:"1s pause at face", rest:"60s", note:"12-15 reps, light, posture + shoulder health", swaps:["Band Pull-Apart","DB Reverse Fly","Prone Y Raise"] },
+        { id:"b8b", target:"2 × 30s each side", weeks:"even", name:"Side Plank", defaultSets:1, hasWeight:false, note:"2 rounds × 30s each side" },
       ]},
       { name: "COOLDOWN", exercises: [
-        { id:"b9", weeks:"odd", name:"Pigeon Stretch + Box Breathing", defaultSets:1, hasWeight:false, note:"4-4-4-4 pattern" },
-        { id:"b9b", weeks:"even", name:"Child's Pose + Lat Stretch", defaultSets:1, hasWeight:false, note:"60s, walk hands to each side" },
-        { id:"b12", name:"Standing Hamstring Stretch", defaultSets:1, hasWeight:false, note:"60s each side, foot on bench" },
-        { id:"b13", name:"Hang from bar", defaultSets:1, hasWeight:false, note:"30-60s, decompress spine + shoulders" },
+        { id:"b9", target:"1 min each side", weeks:"odd", name:"Pigeon Stretch + Box Breathing", defaultSets:1, hasWeight:false, note:"4-4-4-4 pattern" },
+        { id:"b9b", target:"1 × 60s", weeks:"even", name:"Child's Pose + Lat Stretch", defaultSets:1, hasWeight:false, note:"60s, walk hands to each side" },
+        { id:"b12", target:"60s each side", name:"Standing Hamstring Stretch", defaultSets:1, hasWeight:false, note:"60s each side, foot on bench" },
+        { id:"b13", target:"1 × 30-60s", name:"Hang from bar", defaultSets:1, hasWeight:false, note:"30-60s, decompress spine + shoulders" },
       ]},
     ]
   }
@@ -469,6 +481,15 @@ function getLastWeight(exerciseId) {
     }
   }
   return null;
+}
+
+function targetText(ex, exData, week) {
+  if (!ex.hasWeight) return ex.target || "";
+  const wt = WEEK_TARGETS[week] || WEEK_TARGETS[1];
+  const sets = Math.min(ex.defaultSets, wt.sets);
+  const reps = ex.reps || wt.reps;
+  const unit = /[a-z]/i.test(reps) ? "" : " reps";
+  return `${sets} × ${reps}${unit}`;
 }
 
 function getSessionCount() { return state.sessions.filter(s => s.completed).length; }
@@ -693,6 +714,7 @@ function renderWorkout() {
         <div class="exercise-header">
           <div class="${hasSwaps?'swap-trigger':''}" ${hasSwaps?`onclick="openSwap('${ex.id}')"`:''}>
             <div class="exercise-name">${escapeHTML(displayName)}${hasSwaps?'<span class="swap-hint">⇄ swap</span>':''}</div>
+            ${targetText(ex, exData, s.week) ? `<div class="exercise-target">${escapeHTML(targetText(ex, exData, s.week))}</div>` : ''}
             <div class="exercise-meta">${escapeHTML(metaParts)}</div>
           </div>
           ${last ? `<div class="exercise-last">Last: ${escapeHTML(last)}kg</div>` : ''}
@@ -827,6 +849,7 @@ function renderHistory() {
         <textarea id="export-fallback" class="notes-textarea" rows="8" style="display:none;margin-top:0.5rem" readonly></textarea>
       </div>
       <button class="btn-reset" onclick="resetAll()">Delete all history and start fresh</button>` : ''}
+    ${renderSyncPanel()}
   `;
 }
 
@@ -1025,6 +1048,7 @@ function finishWorkout() {
     state.sessions.push(s);
   }
   saveData();
+  queueSync("upsert", s.id);
   endActiveSession();
   if (editingId) {
     state.viewingSession = s;
@@ -1101,7 +1125,7 @@ function exportForReview() {
 }
 
 function resetAll() {
-  if (!confirm("Delete ALL saved sessions and start fresh at Week 1? This can't be undone.")) return;
+  if (!confirm("Delete ALL saved sessions on this phone and start fresh at Week 1? This can't be undone. (Your Google Sheet backup, if set up, is kept.)")) return;
   state.sessions = [];
   state.currentWeek = 1;
   endActiveSession();
@@ -1119,6 +1143,7 @@ function deleteSession(id) {
   if (confirm("Delete this session?")) {
     state.sessions = state.sessions.filter(s => s.id !== id);
     saveData();
+    queueSync("delete", id);
     state.viewingSession = null;
     state.view = "history"; render();
   }
@@ -1237,10 +1262,198 @@ async function syncWakeLock() {
 }
 document.addEventListener("visibilitychange", syncWakeLock);
 
+
+// ==================== GOOGLE SHEET SYNC ====================
+// Sends each saved session to a Google Apps Script web app attached to Nick's Google Sheet.
+// Changes wait in a queue (stored on the phone) until they're sent, so bad gym signal is fine.
+const SYNC_KEY = "the-program-sync";
+const SYNC_QUEUE_KEY = "the-program-syncqueue";
+let syncBusy = false;
+
+function getSyncConfig() {
+  try { return JSON.parse(localStorage.getItem(SYNC_KEY)) || {}; } catch(e) { return {}; }
+}
+function setSyncConfig(cfg) {
+  try { localStorage.setItem(SYNC_KEY, JSON.stringify(cfg)); } catch(e) {}
+}
+function getSyncQueue() {
+  try { return JSON.parse(localStorage.getItem(SYNC_QUEUE_KEY)) || []; } catch(e) { return []; }
+}
+function setSyncQueue(q) {
+  try { localStorage.setItem(SYNC_QUEUE_KEY, JSON.stringify(q)); } catch(e) {}
+}
+function syncReady() { const c = getSyncConfig(); return !!(c.url && c.token); }
+
+function queueSync(action, id) {
+  if (!syncReady()) return;
+  const q = getSyncQueue().filter(x => x.id !== id); // latest change for a session wins
+  q.push({ action, id });
+  setSyncQueue(q);
+  flushSync();
+}
+
+function buildSyncSession(s) {
+  const day = PROGRAM[s.dayKey];
+  const sets = [], skipped = [];
+  day.sections.forEach(sec => {
+    sec.exercises.forEach(ex => {
+      const d = s.exercises[ex.id];
+      if (!d) return;
+      const swapped = s.swaps && s.swaps[ex.id];
+      const name = swapped || ex.name;
+      if (ex.hasWeight) {
+        d.sets.forEach((x, i) => {
+          if (x.weight === "" && x.reps === "" && !x.done) return;
+          const w = parseFloat(x.weight), r = parseFloat(x.reps);
+          sets.push({
+            section: sec.name[0] + sec.name.slice(1).toLowerCase(),
+            exerciseId: ex.id, exercise: name, swappedFrom: swapped ? ex.name : "",
+            anchor: !!ex.anchor, set: i + 1,
+            weight: isNaN(w) ? "" : w, reps: isNaN(r) ? "" : r,
+            unit: ex.unit === "secs" ? "secs" : "reps", done: !!x.done,
+          });
+        });
+      } else if (!d.sets[0]?.done) {
+        skipped.push(name);
+      }
+    });
+  });
+  return {
+    id: String(s.id), date: s.date, day: s.dayLabel, week: s.week, rotation: rotationLabel(s.week),
+    rpe: s.rpe ?? "", energy: s.energy ?? "", notes: s.note || "", skipped, sets,
+  };
+}
+
+async function postSync(payload) {
+  const { url, token } = getSyncConfig();
+  try {
+    // Plain-text body keeps this a "simple" request, which Apps Script web apps accept from a browser.
+    const res = await fetch(url, { method: "POST", body: JSON.stringify({ ...payload, token }), redirect: "follow" });
+    const data = await res.json();
+    return data && typeof data === "object" ? data : { ok: false, error: "Unexpected reply from the Sheet." };
+  } catch(e) {
+    return { ok: false, error: navigator.onLine === false ? "Offline. Will retry." : "Couldn't reach the Sheet. Will retry.", retry: true };
+  }
+}
+
+async function flushSync() {
+  if (syncBusy || !syncReady()) return;
+  syncBusy = true;
+  try {
+    let q = getSyncQueue();
+    while (q.length) {
+      const item = q[0];
+      const session = state.sessions.find(s => String(s.id) === String(item.id));
+      const payload = item.action === "upsert" && session
+        ? { action: "upsert", session: buildSyncSession(session) }
+        : { action: "delete", id: String(item.id) };
+      const res = await postSync(payload);
+      const cfg = getSyncConfig();
+      if (!res.ok) { cfg.lastError = res.error || "Sync failed."; setSyncConfig(cfg); break; }
+      q = getSyncQueue().filter(x => !(x.id === item.id && x.action === item.action));
+      setSyncQueue(q);
+      cfg.lastSync = new Date().toISOString(); cfg.lastError = ""; setSyncConfig(cfg);
+    }
+  } finally {
+    syncBusy = false;
+    updateSyncStatus();
+  }
+}
+
+function syncStatusInfo() {
+  const cfg = getSyncConfig(), pending = getSyncQueue().length;
+  if (!syncReady()) return { cls: "", text: "Not set up" };
+  if (cfg.lastError && pending) return { cls: pending && /retry/i.test(cfg.lastError) ? "warn" : "err", text: `${pending} waiting • ${cfg.lastError}` };
+  if (pending) return { cls: "warn", text: `${pending} waiting to sync` };
+  if (cfg.lastSync) {
+    const mins = Math.round((Date.now() - new Date(cfg.lastSync)) / 60000);
+    return { cls: "ok", text: `Synced ${mins < 1 ? "just now" : mins < 60 ? mins + " min ago" : mins < 1440 ? Math.round(mins/60) + " h ago" : formatDate(cfg.lastSync.slice(0,10))}` };
+  }
+  return { cls: "ok", text: "Connected" };
+}
+
+function updateSyncStatus() {
+  const el = document.getElementById("sync-status");
+  if (!el) return;
+  const st = syncStatusInfo();
+  el.className = "sync-status " + st.cls;
+  el.textContent = st.text;
+}
+
+function renderSyncPanel() {
+  const cfg = getSyncConfig(), st = syncStatusInfo();
+  return `
+    <details class="sync-panel" ${syncReady() ? "" : "open"}>
+      <summary><span>Google Sheet backup</span><span id="sync-status" class="sync-status ${st.cls}">${escapeHTML(st.text)}</span></summary>
+      <div class="sync-body">
+        <label class="sync-label" for="sync-url">Web app URL (from Apps Script → Deploy)</label>
+        <input id="sync-url" class="sync-input" type="url" placeholder="https://script.google.com/macros/s/…/exec" value="${escapeHTML(cfg.url || "")}">
+        <label class="sync-label" for="sync-token">Secret code (must match SECRET in the script)</label>
+        <input id="sync-token" class="sync-input" type="text" autocomplete="off" placeholder="Tap 'Make a code'" value="${escapeHTML(cfg.token || "")}">
+        <div class="sync-btns">
+          <button class="sync-btn" onclick="makeSyncCode()">Make a code</button>
+          <button class="sync-btn" onclick="saveAndTestSync()">Save &amp; test</button>
+          <button class="sync-btn" onclick="sendAllSessions()">Send all sessions</button>
+        </div>
+        <div class="sync-help" id="sync-msg">Once set up, every session you save, edit or delete updates your Google Sheet automatically. Deleting all history on this phone doesn't touch the Sheet.</div>
+      </div>
+    </details>`;
+}
+
+function syncMsg(text, color) {
+  const el = document.getElementById("sync-msg");
+  if (el) { el.textContent = text; el.style.color = color || "#777"; }
+}
+
+function makeSyncCode() {
+  const bytes = new Uint8Array(12);
+  (window.crypto || {}).getRandomValues ? crypto.getRandomValues(bytes) : bytes.forEach((_, i) => bytes[i] = Math.random() * 256);
+  const code = "tp-" + Array.from(bytes, b => b.toString(16).padStart(2, "0")).join("");
+  document.getElementById("sync-token").value = code;
+  const done = () => syncMsg("New code made and copied. Paste it into SECRET in the script, then tap Save & test.", "#4ade80");
+  if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(code).then(done).catch(() => syncMsg("New code made. Copy it into SECRET in the script."));
+  else syncMsg("New code made. Copy it into SECRET in the script.");
+}
+
+async function saveAndTestSync() {
+  const url = document.getElementById("sync-url").value.trim();
+  const token = document.getElementById("sync-token").value.trim();
+  if (!/^https:\/\/script\.google(usercontent)?\.com\//.test(url)) { syncMsg("That doesn't look like an Apps Script web app URL. It should start with https://script.google.com/", "#ff5555"); return; }
+  if (!token) { syncMsg("Add a secret code first (tap Make a code).", "#ff5555"); return; }
+  const cfg = getSyncConfig(); cfg.url = url; cfg.token = token; cfg.lastError = ""; setSyncConfig(cfg);
+  syncMsg("Testing…");
+  const res = await postSync({ action: "ping" });
+  if (res.ok) {
+    syncMsg(`Connected. The Sheet has ${res.sessions} session${res.sessions === 1 ? "" : "s"}. Tap Send all sessions to back up everything on this phone.`, "#4ade80");
+    const c = getSyncConfig(); c.lastSync = new Date().toISOString(); setSyncConfig(c);
+    flushSync();
+  } else {
+    syncMsg(res.error || "Couldn't connect.", "#ff5555");
+  }
+  updateSyncStatus();
+}
+
+function sendAllSessions() {
+  if (!syncReady()) { syncMsg("Save & test the connection first.", "#ff5555"); return; }
+  const ids = new Set(state.sessions.map(s => String(s.id)));
+  const q = getSyncQueue().filter(x => !ids.has(String(x.id)));
+  state.sessions.forEach(s => q.push({ action: "upsert", id: String(s.id) }));
+  setSyncQueue(q);
+  syncMsg(`Sending ${ids.size} session${ids.size === 1 ? "" : "s"}…`);
+  flushSync().then(() => {
+    if (!getSyncQueue().length) syncMsg(`Done. ${ids.size} session${ids.size === 1 ? "" : "s"} in your Google Sheet.`, "#4ade80");
+    else syncMsg(getSyncConfig().lastError || "Some sessions are still waiting. They'll retry automatically.", "#f4a261");
+  });
+}
+
+window.addEventListener("online", flushSync);
+document.addEventListener("visibilitychange", () => { if (document.visibilityState === "visible") flushSync(); });
+
 // ==================== INIT ====================
 loadData();
 render();
 setInterval(restTick, 250);
+flushSync();
 // Belt and braces: save the in-progress session whenever the app is hidden (screen lock, app switch)
 document.addEventListener("visibilitychange", () => { if (document.hidden) saveDraft(); });
 window.addEventListener("pagehide", saveDraft);
