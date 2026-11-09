@@ -158,17 +158,6 @@
     background: linear-gradient(transparent, #0a0a0f 30%); z-index: 10;
     max-width: 430px; margin: 0 auto;
   }
-  .sync-panel { margin: 1.5rem 1rem 2rem; border: 1px solid rgba(255,255,255,0.08); border-radius: 10px; background: rgba(255,255,255,0.02); }
-  .sync-panel summary { padding: 0.8rem 0.9rem; cursor: pointer; font-size: 0.75rem; font-weight: 700; list-style: none; display: flex; justify-content: space-between; gap: 0.5rem; }
-  .sync-panel summary::-webkit-details-marker { display: none; }
-  .sync-body { padding: 0 0.9rem 0.9rem; }
-  .sync-status { font-size: 0.6rem; font-weight: 400; color: #888; text-align: right; }
-  .sync-status.ok { color: #4ade80; } .sync-status.warn { color: #f4a261; } .sync-status.err { color: #ff5555; }
-  .sync-label { font-size: 0.6rem; color: #888; margin: 0.6rem 0 0.25rem; display: block; }
-  .sync-input { width: 100%; background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.1); border-radius: 6px; color: #e0e0e0; padding: 0.55rem; font-family: inherit; font-size: 0.7rem; }
-  .sync-btns { display: flex; gap: 0.5rem; margin-top: 0.75rem; flex-wrap: wrap; }
-  .sync-btn { flex: 1; min-width: 7rem; background: rgba(92,156,230,0.12); border: 1px solid rgba(92,156,230,0.3); color: #5c9ce6; border-radius: 8px; padding: 0.6rem; font-size: 0.65rem; cursor: pointer; font-family: inherit; }
-  .sync-help { font-size: 0.6rem; color: #777; line-height: 1.5; margin-top: 0.6rem; }
   .rest-bar {
     display: none; margin-bottom: 0.6rem; background: #1a1a2e;
     border: 1px solid rgba(92,156,230,0.4); border-radius: 12px; padding: 0.6rem 0.75rem;
@@ -844,12 +833,13 @@ function renderHistory() {
     ${items}
     ${state.sessions.length ? `
       <div style="padding:1rem 1rem 0">
-        <button class="btn-primary" onclick="exportForReview()">Copy training log for Claude</button>
+        <button class="btn-primary" onclick="saveLogToDrive()">Save log to Google Drive</button>
+        <div id="drive-status" style="font-size:0.6rem;color:#888;text-align:center;margin:0.5rem 0 1rem">${driveStatusText()}. Save it to the Gym Tracker folder.</div>
+        <button class="btn-primary" style="background:rgba(255,255,255,0.06);color:#ccc;border:1px solid rgba(255,255,255,0.12);box-shadow:none" onclick="exportForReview()">Copy training log for Claude</button>
         <div id="export-status" style="font-size:0.6rem;color:#888;text-align:center;margin-top:0.5rem">Copies every session as text. Paste it into a chat with Claude.</div>
         <textarea id="export-fallback" class="notes-textarea" rows="8" style="display:none;margin-top:0.5rem" readonly></textarea>
       </div>
       <button class="btn-reset" onclick="resetAll()">Delete all history and start fresh</button>` : ''}
-    ${renderSyncPanel()}
   `;
 }
 
@@ -1048,7 +1038,6 @@ function finishWorkout() {
     state.sessions.push(s);
   }
   saveData();
-  queueSync("upsert", s.id);
   endActiveSession();
   if (editingId) {
     state.viewingSession = s;
@@ -1125,7 +1114,7 @@ function exportForReview() {
 }
 
 function resetAll() {
-  if (!confirm("Delete ALL saved sessions on this phone and start fresh at Week 1? This can't be undone. (Your Google Sheet backup, if set up, is kept.)")) return;
+  if (!confirm("Delete ALL saved sessions on this phone and start fresh at Week 1? This can't be undone. (Files you've saved to Google Drive are kept.)")) return;
   state.sessions = [];
   state.currentWeek = 1;
   endActiveSession();
@@ -1143,7 +1132,6 @@ function deleteSession(id) {
   if (confirm("Delete this session?")) {
     state.sessions = state.sessions.filter(s => s.id !== id);
     saveData();
-    queueSync("delete", id);
     state.viewingSession = null;
     state.view = "history"; render();
   }
@@ -1263,36 +1251,12 @@ async function syncWakeLock() {
 document.addEventListener("visibilitychange", syncWakeLock);
 
 
-// ==================== GOOGLE SHEET SYNC ====================
-// Sends each saved session to a Google Apps Script web app attached to Nick's Google Sheet.
-// Changes wait in a queue (stored on the phone) until they're sent, so bad gym signal is fine.
-const SYNC_KEY = "the-program-sync";
-const SYNC_QUEUE_KEY = "the-program-syncqueue";
-let syncBusy = false;
+// ==================== SAVE LOG TO GOOGLE DRIVE ====================
+// Builds a text file (readable log + CSV data) and hands it to the phone's share menu,
+// where "Drive" saves it to Google Drive. Falls back to a normal download on a computer.
+const DRIVE_KEY = "the-program-drivesave";
 
-function getSyncConfig() {
-  try { return JSON.parse(localStorage.getItem(SYNC_KEY)) || {}; } catch(e) { return {}; }
-}
-function setSyncConfig(cfg) {
-  try { localStorage.setItem(SYNC_KEY, JSON.stringify(cfg)); } catch(e) {}
-}
-function getSyncQueue() {
-  try { return JSON.parse(localStorage.getItem(SYNC_QUEUE_KEY)) || []; } catch(e) { return []; }
-}
-function setSyncQueue(q) {
-  try { localStorage.setItem(SYNC_QUEUE_KEY, JSON.stringify(q)); } catch(e) {}
-}
-function syncReady() { const c = getSyncConfig(); return !!(c.url && c.token); }
-
-function queueSync(action, id) {
-  if (!syncReady()) return;
-  const q = getSyncQueue().filter(x => x.id !== id); // latest change for a session wins
-  q.push({ action, id });
-  setSyncQueue(q);
-  flushSync();
-}
-
-function buildSyncSession(s) {
+function sessionRows(s) {
   const day = PROGRAM[s.dayKey];
   const sets = [], skipped = [];
   day.sections.forEach(sec => {
@@ -1324,136 +1288,78 @@ function buildSyncSession(s) {
   };
 }
 
-async function postSync(payload) {
-  const { url, token } = getSyncConfig();
-  try {
-    // Plain-text body keeps this a "simple" request, which Apps Script web apps accept from a browser.
-    const res = await fetch(url, { method: "POST", body: JSON.stringify({ ...payload, token }), redirect: "follow" });
-    const data = await res.json();
-    return data && typeof data === "object" ? data : { ok: false, error: "Unexpected reply from the Sheet." };
-  } catch(e) {
-    return { ok: false, error: navigator.onLine === false ? "Offline. Will retry." : "Couldn't reach the Sheet. Will retry.", retry: true };
-  }
+function csvCell(v) {
+  const t = String(v ?? "");
+  return /[",\n\r]/.test(t) ? `"${t.replace(/"/g, '""')}"` : t;
 }
 
-async function flushSync() {
-  if (syncBusy || !syncReady()) return;
-  syncBusy = true;
+function buildDriveFileText() {
+  const sorted = [...state.sessions].sort((a,b) => a.date.localeCompare(b.date) || String(a.id).localeCompare(String(b.id)));
+  const data = sorted.map(sessionRows);
+  const sessionsCsv = [["Session ID","Date","Day","Week","Rotation","Session RPE","Energy","Skipped","Notes"]]
+    .concat(data.map(d => [d.id, d.date, d.day, d.week, d.rotation, d.rpe, d.energy, d.skipped.join("; "), d.notes.replace(/\s+/g, " ")]))
+    .map(r => r.map(csvCell).join(",")).join("\n");
+  const setsCsv = [["Session ID","Date","Day","Week","Section","Exercise ID","Exercise","Swapped from","Anchor lift","Set","Weight (kg)","Reps / secs","Unit","Done"]]
+    .concat(data.flatMap(d => d.sets.map(x => [d.id, d.date, d.day, d.week, x.section, x.exerciseId, x.exercise, x.swappedFrom, x.anchor ? "Yes" : "", x.set, x.weight, x.reps, x.unit, x.done ? "Yes" : ""])))
+    .map(r => r.map(csvCell).join(",")).join("\n");
+  return [
+    buildExportText(),
+    "==================== DATA: SESSIONS (CSV) ====================",
+    sessionsCsv,
+    "",
+    "==================== DATA: SETS (CSV) ====================",
+    setsCsv,
+    "",
+  ].join("\n");
+}
+
+function driveStatusText() {
   try {
-    let q = getSyncQueue();
-    while (q.length) {
-      const item = q[0];
-      const session = state.sessions.find(s => String(s.id) === String(item.id));
-      const payload = item.action === "upsert" && session
-        ? { action: "upsert", session: buildSyncSession(session) }
-        : { action: "delete", id: String(item.id) };
-      const res = await postSync(payload);
-      const cfg = getSyncConfig();
-      if (!res.ok) { cfg.lastError = res.error || "Sync failed."; setSyncConfig(cfg); break; }
-      q = getSyncQueue().filter(x => !(x.id === item.id && x.action === item.action));
-      setSyncQueue(q);
-      cfg.lastSync = new Date().toISOString(); cfg.lastError = ""; setSyncConfig(cfg);
+    const d = JSON.parse(localStorage.getItem(DRIVE_KEY));
+    if (d && d.at) return `Last saved: ${formatDate(d.at.slice(0,10))} (${d.count} session${d.count === 1 ? "" : "s"})`;
+  } catch(e) {}
+  return "Not saved to Drive yet";
+}
+
+async function saveLogToDrive() {
+  const status = document.getElementById("drive-status");
+  const say = (t, c) => { if (status) { status.textContent = t; status.style.color = c || "#888"; } };
+  const text = buildDriveFileText();
+  const name = `training-log-${todayStr()}.txt`;
+  const markSaved = () => {
+    try { localStorage.setItem(DRIVE_KEY, JSON.stringify({ at: todayStr(), count: state.sessions.length })); } catch(e) {}
+  };
+  let file = null;
+  try { file = new File([text], name, { type: "text/plain" }); } catch(e) {}
+
+  if (file && navigator.canShare && navigator.canShare({ files: [file] })) {
+    try {
+      await navigator.share({ files: [file], title: name });
+      markSaved();
+      say(`Sent ${name}. In the share menu, pick Drive → Gym Tracker folder → Save.`, "#4ade80");
+    } catch(e) {
+      if (e && e.name === "AbortError") say("Cancelled. Nothing was saved.");
+      else say("Couldn't open the share menu. Use Copy training log instead.", "#ff5555");
     }
-  } finally {
-    syncBusy = false;
-    updateSyncStatus();
+    return;
+  }
+  // Computer or older browser: download the file instead
+  try {
+    const url = URL.createObjectURL(new Blob([text], { type: "text/plain" }));
+    const a = document.createElement("a");
+    a.href = url; a.download = name; document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 2000);
+    markSaved();
+    say(`Downloaded ${name}. Upload it to the Gym Tracker folder in Google Drive.`, "#4ade80");
+  } catch(e) {
+    say("Couldn't save the file. Use Copy training log instead.", "#ff5555");
   }
 }
-
-function syncStatusInfo() {
-  const cfg = getSyncConfig(), pending = getSyncQueue().length;
-  if (!syncReady()) return { cls: "", text: "Not set up" };
-  if (cfg.lastError && pending) return { cls: pending && /retry/i.test(cfg.lastError) ? "warn" : "err", text: `${pending} waiting • ${cfg.lastError}` };
-  if (pending) return { cls: "warn", text: `${pending} waiting to sync` };
-  if (cfg.lastSync) {
-    const mins = Math.round((Date.now() - new Date(cfg.lastSync)) / 60000);
-    return { cls: "ok", text: `Synced ${mins < 1 ? "just now" : mins < 60 ? mins + " min ago" : mins < 1440 ? Math.round(mins/60) + " h ago" : formatDate(cfg.lastSync.slice(0,10))}` };
-  }
-  return { cls: "ok", text: "Connected" };
-}
-
-function updateSyncStatus() {
-  const el = document.getElementById("sync-status");
-  if (!el) return;
-  const st = syncStatusInfo();
-  el.className = "sync-status " + st.cls;
-  el.textContent = st.text;
-}
-
-function renderSyncPanel() {
-  const cfg = getSyncConfig(), st = syncStatusInfo();
-  return `
-    <details class="sync-panel" ${syncReady() ? "" : "open"}>
-      <summary><span>Google Sheet backup</span><span id="sync-status" class="sync-status ${st.cls}">${escapeHTML(st.text)}</span></summary>
-      <div class="sync-body">
-        <label class="sync-label" for="sync-url">Web app URL (from Apps Script → Deploy)</label>
-        <input id="sync-url" class="sync-input" type="url" placeholder="https://script.google.com/macros/s/…/exec" value="${escapeHTML(cfg.url || "")}">
-        <label class="sync-label" for="sync-token">Secret code (must match SECRET in the script)</label>
-        <input id="sync-token" class="sync-input" type="text" autocomplete="off" placeholder="Tap 'Make a code'" value="${escapeHTML(cfg.token || "")}">
-        <div class="sync-btns">
-          <button class="sync-btn" onclick="makeSyncCode()">Make a code</button>
-          <button class="sync-btn" onclick="saveAndTestSync()">Save &amp; test</button>
-          <button class="sync-btn" onclick="sendAllSessions()">Send all sessions</button>
-        </div>
-        <div class="sync-help" id="sync-msg">Once set up, every session you save, edit or delete updates your Google Sheet automatically. Deleting all history on this phone doesn't touch the Sheet.</div>
-      </div>
-    </details>`;
-}
-
-function syncMsg(text, color) {
-  const el = document.getElementById("sync-msg");
-  if (el) { el.textContent = text; el.style.color = color || "#777"; }
-}
-
-function makeSyncCode() {
-  const bytes = new Uint8Array(12);
-  (window.crypto || {}).getRandomValues ? crypto.getRandomValues(bytes) : bytes.forEach((_, i) => bytes[i] = Math.random() * 256);
-  const code = "tp-" + Array.from(bytes, b => b.toString(16).padStart(2, "0")).join("");
-  document.getElementById("sync-token").value = code;
-  const done = () => syncMsg("New code made and copied. Paste it into SECRET in the script, then tap Save & test.", "#4ade80");
-  if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(code).then(done).catch(() => syncMsg("New code made. Copy it into SECRET in the script."));
-  else syncMsg("New code made. Copy it into SECRET in the script.");
-}
-
-async function saveAndTestSync() {
-  const url = document.getElementById("sync-url").value.trim();
-  const token = document.getElementById("sync-token").value.trim();
-  if (!/^https:\/\/script\.google(usercontent)?\.com\//.test(url)) { syncMsg("That doesn't look like an Apps Script web app URL. It should start with https://script.google.com/", "#ff5555"); return; }
-  if (!token) { syncMsg("Add a secret code first (tap Make a code).", "#ff5555"); return; }
-  const cfg = getSyncConfig(); cfg.url = url; cfg.token = token; cfg.lastError = ""; setSyncConfig(cfg);
-  syncMsg("Testing…");
-  const res = await postSync({ action: "ping" });
-  if (res.ok) {
-    syncMsg(`Connected. The Sheet has ${res.sessions} session${res.sessions === 1 ? "" : "s"}. Tap Send all sessions to back up everything on this phone.`, "#4ade80");
-    const c = getSyncConfig(); c.lastSync = new Date().toISOString(); setSyncConfig(c);
-    flushSync();
-  } else {
-    syncMsg(res.error || "Couldn't connect.", "#ff5555");
-  }
-  updateSyncStatus();
-}
-
-function sendAllSessions() {
-  if (!syncReady()) { syncMsg("Save & test the connection first.", "#ff5555"); return; }
-  const ids = new Set(state.sessions.map(s => String(s.id)));
-  const q = getSyncQueue().filter(x => !ids.has(String(x.id)));
-  state.sessions.forEach(s => q.push({ action: "upsert", id: String(s.id) }));
-  setSyncQueue(q);
-  syncMsg(`Sending ${ids.size} session${ids.size === 1 ? "" : "s"}…`);
-  flushSync().then(() => {
-    if (!getSyncQueue().length) syncMsg(`Done. ${ids.size} session${ids.size === 1 ? "" : "s"} in your Google Sheet.`, "#4ade80");
-    else syncMsg(getSyncConfig().lastError || "Some sessions are still waiting. They'll retry automatically.", "#f4a261");
-  });
-}
-
-window.addEventListener("online", flushSync);
-document.addEventListener("visibilitychange", () => { if (document.visibilityState === "visible") flushSync(); });
 
 // ==================== INIT ====================
 loadData();
 render();
 setInterval(restTick, 250);
-flushSync();
 // Belt and braces: save the in-progress session whenever the app is hidden (screen lock, app switch)
 document.addEventListener("visibilitychange", () => { if (document.hidden) saveDraft(); });
 window.addEventListener("pagehide", saveDraft);
