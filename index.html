@@ -113,6 +113,7 @@
   .set-input.weight { width: 4rem; }
   .set-input.reps { width: 3.5rem; }
   .set-input.done { border-color: rgba(233,69,96,0.3); }
+  .set-input.prefill { color: #8a8a8a; font-style: italic; }
   .set-check {
     width: 2rem; height: 2rem; border-radius: 6px; border: 1px solid rgba(255,255,255,0.1);
     background: rgba(255,255,255,0.04); color: #555; cursor: pointer;
@@ -174,6 +175,15 @@
   }
   .rest-progress { height: 3px; background: rgba(255,255,255,0.08); border-radius: 2px; margin-top: 0.45rem; overflow: hidden; }
   .rest-progress div { height: 100%; background: #5c9ce6; width: 100%; }
+  .rest-bar.work { border-color: rgba(233,69,96,0.55); }
+  .rest-bar.work .rest-time { color: #e94560; }
+  .rest-bar.work .rest-progress div { background: #e94560; }
+  .rest-bar.work.switch .rest-time { color: #f5b942; }
+  .btn-timer {
+    margin: 0.25rem 0 0 0.5rem; background: rgba(233,69,96,0.1); border: 1px solid rgba(233,69,96,0.35);
+    color: #e94560; border-radius: 6px; padding: 0.4rem 0.65rem; font-size: 0.65rem; cursor: pointer;
+  }
+  .btn-timer.small { margin: 0; padding: 0 0.45rem; height: 2rem; min-width: 2rem; font-size: 0.7rem; }
   .btn-rest-chip {
     margin-top: 0.35rem; margin-left: 0.75rem; background: none; border: none; color: #5c9ce6;
     cursor: pointer; font-size: 0.6rem; padding: 0.2rem 0;
@@ -393,6 +403,7 @@ function loadData() {
         state.sessionNote = d.sessionNote || "";
         state.editingId = d.editingId || null;
         state.rest = d.rest && d.rest.end > Date.now() ? d.rest : null;
+        state.work = d.work || null;
         state.view = "workout";
       }
     }
@@ -410,6 +421,7 @@ function saveDraft() {
       sessionNote: state.sessionNote,
       editingId: state.editingId,
       rest: state.rest,
+      work: state.work,
     }));
   } catch(e) {}
 }
@@ -458,18 +470,38 @@ function formatDate(s) {
   return `${days[d.getDay()]} ${d.getDate()} ${months[d.getMonth()]}`;
 }
 
-function getLastWeight(exerciseId) {
+// Sets from the most recent saved session that did this exercise (matching swap, if any)
+function getLastSets(exerciseId, swapName) {
   for (let i = state.sessions.length - 1; i >= 0; i--) {
     const s = state.sessions[i];
     if (state.editingId && s.id === state.editingId) continue;
-    if (s.exercises && s.exercises[exerciseId]) {
-      const sets = s.exercises[exerciseId].sets;
-      for (const set of sets) {
-        if (set.weight) return set.weight;
-      }
-    }
+    const d = s.exercises && s.exercises[exerciseId];
+    if (!d) continue;
+    const used = (s.swaps && s.swaps[exerciseId]) || null;
+    if (used !== (swapName || null)) continue;
+    const sets = d.sets.filter(x => x.weight !== "" && x.weight != null);
+    if (sets.length) return sets;
   }
   return null;
+}
+
+// Fill un-ticked sets with last time's weights and this week's target reps.
+// Values stay marked "prefill" (greyed) until edited or ticked; untouched + unticked sets are dropped on save.
+function prefillSets(ex, exData, week, swapName) {
+  const last = getLastSets(ex.id, swapName);
+  const wt = WEEK_TARGETS[week] || WEEK_TARGETS[1];
+  const nums = String(ex.reps || wt.reps).match(/\d+(\.\d+)?/g) || [];
+  exData.sets.forEach((set, i) => {
+    if (set.done) return;
+    if (!set.pre && (set.weight !== "" || set.reps !== "")) return; // keep anything typed by hand
+    const src = last ? (last[i] || last[last.length - 1]) : null;
+    let reps = "";
+    if (ex.unit === "secs") reps = src && src.reps !== "" ? src.reps : (nums[0] || "");
+    else reps = nums.length ? nums[nums.length - 1] : "";
+    set.weight = src ? src.weight : "";
+    set.reps = reps;
+    set.pre = !!(set.weight !== "" || set.reps !== "");
+  });
 }
 
 function targetText(ex, exData, week) {
@@ -671,7 +703,9 @@ function renderWorkout() {
     sectionsHTML += `<div class="section-bar">${section.name}</div>`;
     exs.forEach(ex => {
       const exData = s.exercises[ex.id];
-      const last = getLastWeight(ex.id);
+      const lastSets = ex.hasWeight ? getLastSets(ex.id, s.swaps[ex.id] || null) : null;
+      let last = lastSets ? lastSets.map(x => x.weight).join("/") + "kg" : null;
+      if (!ex.hasWeight) { const ls = getLastSecs(ex.id); if (ls) last = `${ls}s`; }
       const displayName = s.swaps[ex.id] || ex.name;
       const metaParts = [ex.anchor?'Anchor lift':'', ex.tempo||'', ex.rest?`Rest: ${ex.rest}`:'', ex.note].filter(Boolean).join(" • ");
       const hasSwaps = ex.swaps && ex.swaps.length > 0;
@@ -684,8 +718,9 @@ function renderWorkout() {
           const checkClass = set.done ? "checked" : "";
           setsHTML += `<div class="set-row">
             <div class="set-num">${idx+1}</div>
-            <input type="number" inputmode="decimal" placeholder="kg" value="${escapeHTML(set.weight)}" class="set-input weight ${doneClass}" oninput="updateSet('${ex.id}',${idx},'weight',this.value)">
-            <input type="number" inputmode="numeric" placeholder="${secondField}" value="${escapeHTML(set.reps)}" class="set-input reps ${doneClass}" oninput="updateSet('${ex.id}',${idx},'reps',this.value)">
+            <input type="number" inputmode="decimal" placeholder="kg" value="${escapeHTML(set.weight)}" class="set-input weight ${doneClass} ${set.pre?'prefill':''}" oninput="updateSet('${ex.id}',${idx},'weight',this.value,this)">
+            <input type="number" inputmode="numeric" placeholder="${secondField}" value="${escapeHTML(set.reps)}" class="set-input reps ${doneClass} ${set.pre?'prefill':''}" oninput="updateSet('${ex.id}',${idx},'reps',this.value,this)">
+            ${ex.unit === "secs" && !set.done ? `<button class="btn-timer small" onclick="startWorkTimer('${ex.id}',${idx})" aria-label="Start timer">▶</button>` : ''}
             <button class="set-check ${checkClass}" onclick="toggleSet('${ex.id}',${idx})">${ICO.check}</button>
           </div>`;
         });
@@ -696,7 +731,12 @@ function renderWorkout() {
         </div>`;
       } else {
         const checkClass = exData.sets[0]?.done ? "checked" : "";
-        setsHTML = `<button class="btn-done-toggle ${checkClass}" onclick="toggleSet('${ex.id}',0)">${ICO.check} ${exData.sets[0]?.done?'Done':'Mark done'}</button>`;
+        const spec = timerSpec(ex);
+        const secsDone = exData.sets[0]?.secs;
+        setsHTML = `<div style="display:flex;align-items:center">
+          <button class="btn-done-toggle ${checkClass}" onclick="toggleSet('${ex.id}',0)">${ICO.check} ${exData.sets[0]?.done?(secsDone?`Done · ${secsDone}s`:'Done'):'Mark done'}</button>
+          ${spec && !exData.sets[0]?.done ? `<button class="btn-timer" onclick="startWorkTimer('${ex.id}',0)">▶ ${escapeHTML(spec.chip)}</button>` : ''}
+        </div>`;
       }
 
       sectionsHTML += `<div class="exercise-row">
@@ -706,7 +746,7 @@ function renderWorkout() {
             ${targetText(ex, exData, s.week) ? `<div class="exercise-target">${escapeHTML(targetText(ex, exData, s.week))}</div>` : ''}
             <div class="exercise-meta">${escapeHTML(metaParts)}</div>
           </div>
-          ${last ? `<div class="exercise-last">Last: ${escapeHTML(last)}kg</div>` : ''}
+          ${last ? `<div class="exercise-last">Last: ${escapeHTML(last)}</div>` : ''}
         </div>
         ${setsHTML}
       </div>`;
@@ -778,9 +818,15 @@ function renderWorkout() {
             <div class="rest-time" id="rest-time">0:00</div>
           </div>
           <div class="rest-btns">
-            <button class="rest-btn" onclick="adjustRest(-15)">−15</button>
-            <button class="rest-btn" onclick="adjustRest(15)">+15</button>
-            <button class="rest-btn" onclick="skipRest()">Skip</button>
+            <span id="rest-ctrls" class="rest-btns">
+              <button class="rest-btn" onclick="adjustRest(-15)">−15</button>
+              <button class="rest-btn" onclick="adjustRest(15)">+15</button>
+              <button class="rest-btn" onclick="skipRest()">Skip</button>
+            </span>
+            <span id="work-ctrls" class="rest-btns" style="display:none">
+              <button class="rest-btn" id="work-stop" onclick="stopWorkTimer(true)">Done</button>
+              <button class="rest-btn" onclick="stopWorkTimer(false)">✕</button>
+            </span>
           </div>
         </div>
         <div class="rest-progress"><div id="rest-progress"></div></div>
@@ -871,7 +917,8 @@ function renderDetail() {
         setsHTML += `</div>`;
       } else {
         const done = exData.sets[0]?.done;
-        setsHTML = `<div style="font-size:0.6rem;color:${done?'#e94560':'#555'}">${done?'✓ Completed':'— Skipped'}</div>`;
+        const secs = exData.sets[0]?.secs;
+        setsHTML = `<div style="font-size:0.6rem;color:${done?'#e94560':'#555'}">${done?(secs?`✓ ${secs}s`:'✓ Completed'):'— Skipped'}</div>`;
       }
       sectionsHTML += `<div style="padding:0.6rem 1.25rem;border-bottom:1px solid rgba(255,255,255,0.03)">
         <div style="font-size:0.75rem;font-weight:600;margin-bottom:0.3rem">${(s.swaps&&s.swaps[ex.id])||ex.name}${s.swaps&&s.swaps[ex.id]?'<span style="font-size:0.5rem;color:#555;margin-left:0.4rem">swapped</span>':''}</div>
@@ -936,6 +983,7 @@ function startWorkout(dayKey) {
       if (ex.hasWeight) {
         const n = Math.min(ex.defaultSets, wt.sets);
         session.exercises[ex.id] = { sets: Array.from({length:n}, ()=>({weight:"",reps:"",done:false})) };
+        prefillSets(ex, session.exercises[ex.id], state.currentWeek, null);
       } else {
         session.exercises[ex.id] = { sets: [{done:false}] };
       }
@@ -954,14 +1002,20 @@ function startWorkout(dayKey) {
   window.scrollTo(0,0);
 }
 
-function updateSet(exId, idx, field, value) {
-  state.activeSession.exercises[exId].sets[idx][field] = value;
+function updateSet(exId, idx, field, value, el) {
+  const set = state.activeSession.exercises[exId].sets[idx];
+  set[field] = value;
+  if (set.pre) {
+    set.pre = false;
+    if (el && el.parentElement) el.parentElement.querySelectorAll('.prefill').forEach(n => n.classList.remove('prefill'));
+  }
   saveDraft();
 }
 
 function toggleSet(exId, idx) {
   const set = state.activeSession.exercises[exId].sets[idx];
   set.done = !set.done;
+  if (set.done) set.pre = false; else delete set.secs;
   if (set.done && !state.editingId) {
     const ex = findExercise(state.activeDay, exId);
     const secs = ex && ex.hasWeight ? parseRest(ex.rest) : 0;
@@ -972,7 +1026,11 @@ function toggleSet(exId, idx) {
 }
 
 function addSet(exId) {
-  state.activeSession.exercises[exId].sets.push({weight:"",reps:"",done:false});
+  const sets = state.activeSession.exercises[exId].sets;
+  const prev = sets[sets.length - 1];
+  sets.push(prev && (prev.weight !== "" || prev.reps !== "")
+    ? {weight:prev.weight, reps:prev.reps, done:false, pre:true}
+    : {weight:"",reps:"",done:false});
   saveDraft();
   render();
 }
@@ -994,6 +1052,8 @@ function swapExercise(exId, idx) {
   } else {
     delete state.activeSession.swaps[exId];
   }
+  const exData = state.activeSession.exercises[exId];
+  if (ex && ex.hasWeight && exData) prefillSets(ex, exData, state.activeSession.week, state.activeSession.swaps[exId] || null);
   state.openSwapMenu = null;
   saveDraft();
   render();
@@ -1003,7 +1063,7 @@ function setRPE(val) { state.sessionRPE = val; saveDraft(); render(); }
 function setEnergy(val) { state.energyLevel = val; saveDraft(); render(); }
 
 function endActiveSession() {
-  state.rest = null; restDoneUntil = 0; updateRestBar();
+  state.rest = null; state.work = null; restDoneUntil = 0; updateRestBar();
   state.activeSession = null; state.activeDay = null;
   state.editingId = null; state.openSwapMenu = null;
   clearDraft();
@@ -1030,6 +1090,10 @@ function finishWorkout() {
   s.rpe = state.sessionRPE;
   s.energy = state.energyLevel;
   s.completed = true;
+  Object.values(s.exercises).forEach(d => (d.sets || []).forEach(x => {
+    if (x.pre && !x.done) { x.weight = ""; x.reps = ""; }
+    delete x.pre;
+  }));
   const editingId = state.editingId;
   if (editingId) {
     const i = state.sessions.findIndex(x => x.id === editingId);
@@ -1086,6 +1150,8 @@ function buildExportText() {
           lines.push(`  ${name}: ${sets.length ? sets.join(", ") : "not logged"}`);
         } else if (!d.sets[0]?.done) {
           skipped.push(name);
+        } else if (d.sets[0].secs) {
+          lines.push(`  ${name}: ${d.sets[0].secs}s`);
         }
       });
     });
@@ -1184,6 +1250,7 @@ function startRest(secs, exId, auto) {
   unlockAudio();
   const ex = findExercise(state.activeDay, exId);
   const name = ex ? ((state.activeSession.swaps && state.activeSession.swaps[exId]) || ex.name) : "";
+  state.work = null;
   state.rest = { end: Date.now() + secs * 1000, total: secs, label: name };
   restDoneUntil = 0;
   saveDraft();
@@ -1205,7 +1272,126 @@ function skipRest() {
   updateRestBar();
 }
 
+// ==================== WORK TIMER (holds, stretches, carries, hangs) ====================
+// Fixed holds count down (with a 5s "switch" between sides). Ranges like 30-60s and carries
+// count up like a stopwatch, beep at the low and high end, and save the time when stopped.
+const SWITCH_SECS = 5;
+
+function timerSpec(ex) {
+  const t = ex.hasWeight ? (ex.unit === "secs" ? (ex.reps || "") : "") : (ex.target || "");
+  if (!t) return null;
+  const sides = /each side|each leg|each arm/i.test(t) ? 2 : 1;
+  const rounds = (/^(\d+)\s*×/.exec(t) || [])[1] | 0 || 1;
+  if (/per area/i.test(t)) {
+    const m = /(\d+(?:\.\d+)?)\s*min/i.exec(t);
+    const parts = (ex.name.split("—")[1] || "").split(",").map(x => x.trim()).filter(Boolean);
+    const secs = m ? Math.round(parseFloat(m[1]) * 60) : 60;
+    return { kind: "down", secs, areas: parts.length ? parts : ["Area 1","Area 2","Area 3"], rounds: 1, sides: 1,
+             chip: `${parts.length || 3} × ${formatClock(secs)}` };
+  }
+  const range = /(\d+)\s*-\s*(\d+)\s*s\b/i.exec(t);
+  if (range) return { kind: "up", min: +range[1], max: +range[2], rounds, sides: 1, chip: `Stopwatch ${range[1]}–${range[2]}s` };
+  let secs = 0;
+  const min = /(\d+(?:\.\d+)?)\s*min/i.exec(t), sec = /(\d+)\s*s\b/i.exec(t);
+  if (min) secs = Math.round(parseFloat(min[1]) * 60); else if (sec) secs = +sec[1];
+  if (!secs) return null;
+  const total = rounds * sides;
+  return { kind: "down", secs, rounds, sides, chip: total > 1 ? `${formatClock(secs)} × ${total}` : formatClock(secs) };
+}
+
+function getLastSecs(exerciseId) {
+  for (let i = state.sessions.length - 1; i >= 0; i--) {
+    const s = state.sessions[i];
+    if (state.editingId && s.id === state.editingId) continue;
+    const d = s.exercises && s.exercises[exerciseId];
+    if (d && d.sets && d.sets[0] && d.sets[0].secs) return d.sets[0].secs;
+  }
+  return null;
+}
+
+function startWorkTimer(exId, setIdx) {
+  unlockAudio();
+  const ex = findExercise(state.activeDay, exId);
+  if (!ex) return;
+  const spec = timerSpec(ex) || { kind: "up", min: 0, max: 0, rounds: 1, sides: 1 };
+  const label = (state.activeSession.swaps && state.activeSession.swaps[exId]) || ex.name;
+  const phases = [];
+  if (spec.areas) {
+    spec.areas.forEach((a, i) => {
+      if (i) phases.push({ kind: "switch", secs: SWITCH_SECS, label: "next: " + a });
+      phases.push({ kind: "down", secs: spec.secs, label: a });
+    });
+  } else if (spec.kind === "up" || ex.hasWeight && spec.sides === 1) {
+    // stopwatch: ranges, and carries (time gets saved into the set)
+    phases.push({ kind: "up", min: spec.min || spec.secs || 0, max: spec.max || 0, label: "" });
+  } else {
+    // one round at a time for multi-round holds (e.g. side plank 2 × 30s each side) when timing a weighted set
+    const rounds = ex.hasWeight ? 1 : spec.rounds;
+    for (let r = 0; r < rounds; r++) for (let sd = 0; sd < spec.sides; sd++) {
+      const n = phases.length;
+      const lbl = [rounds > 1 ? `round ${r+1}` : "", spec.sides > 1 ? (sd ? "side 2" : "side 1") : ""].filter(Boolean).join(", ");
+      if (n) phases.push({ kind: "switch", secs: SWITCH_SECS, label: "switch" + (lbl ? " → " + lbl : "") });
+      phases.push({ kind: "down", secs: spec.secs, label: lbl });
+    }
+  }
+  state.rest = null; restDoneUntil = 0;
+  state.work = { exId, setIdx, label, phases, i: 0, phaseStart: Date.now(), beeped: 0, recordSecs: ex.hasWeight && spec.kind !== "up" ? spec.secs : null };
+  beep(1);
+  saveDraft();
+  updateRestBar();
+}
+
+function stopWorkTimer(keep) {
+  const w = state.work;
+  if (!w) return;
+  state.work = null;
+  if (keep && state.activeSession && state.activeSession.exercises[w.exId]) {
+    const ph = w.phases[w.i];
+    const set = state.activeSession.exercises[w.exId].sets[w.setIdx];
+    const ex = findExercise(state.activeDay, w.exId);
+    let secs = w.recordSecs;
+    if (ph.kind === "up") secs = Math.round((Date.now() - w.phaseStart) / 1000);
+    if (set) {
+      if (ex && ex.hasWeight) { if (secs) set.reps = String(secs); set.pre = false; }
+      else if (ph.kind === "up" && secs) set.secs = secs;
+      if (!set.done) { saveDraft(); toggleSet(w.exId, w.setIdx); return; }
+    }
+  }
+  saveDraft();
+  render();
+}
+
+function workTick() {
+  const w = state.work;
+  if (!w) return;
+  const ph = w.phases[w.i];
+  const el = (Date.now() - w.phaseStart) / 1000;
+  if (ph.kind === "up") {
+    if (ph.min && el >= ph.min && w.beeped < 1) { w.beeped = 1; beep(1); try { navigator.vibrate && navigator.vibrate(200); } catch(e) {} saveDraft(); }
+    if (ph.max && el >= ph.max && w.beeped < 2) { w.beeped = 2; beep(2); try { navigator.vibrate && navigator.vibrate([200,100,200]); } catch(e) {} saveDraft(); }
+    return;
+  }
+  if (el < ph.secs) {
+    // countdown pips for the last 3 seconds of a work phase
+    const left = Math.ceil(ph.secs - el);
+    if (ph.kind === "down" && left <= 3 && w.pip !== left) { w.pip = left; beep(1); }
+    return;
+  }
+  w.pip = null;
+  if (w.i < w.phases.length - 1) {
+    w.i++; w.phaseStart = Date.now();
+    beep(ph.kind === "switch" ? 1 : 2);
+    try { navigator.vibrate && navigator.vibrate(300); } catch(e) {}
+    saveDraft();
+    return;
+  }
+  try { navigator.vibrate && navigator.vibrate([300,150,300,150,300]); } catch(e) {}
+  beep(3);
+  stopWorkTimer(true);
+}
+
 function restTick() {
+  workTick();
   if (state.rest && Date.now() >= state.rest.end) {
     state.rest = null;
     restDoneUntil = Date.now() + 4000;
@@ -1220,6 +1406,29 @@ function updateRestBar() {
   const bar = document.getElementById("rest-bar");
   if (!bar) return;
   const now = Date.now();
+  const workOn = !!state.work;
+  bar.classList.toggle("work", workOn);
+  document.getElementById("rest-ctrls").style.display = workOn ? "none" : "flex";
+  document.getElementById("work-ctrls").style.display = workOn ? "flex" : "none";
+  if (workOn) {
+    const w = state.work, ph = w.phases[w.i];
+    const el = (now - w.phaseStart) / 1000;
+    bar.style.display = "block"; bar.classList.remove("done");
+    bar.classList.toggle("switch", ph.kind === "switch");
+    document.getElementById("rest-label").textContent = `${w.label}${ph.label ? " — " + ph.label : ""}`;
+    let pct;
+    if (ph.kind === "up") {
+      document.getElementById("rest-time").textContent = formatClock(Math.floor(el));
+      pct = Math.min(100, el / (ph.max || ph.min || 60) * 100);
+    } else {
+      document.getElementById("rest-time").textContent = formatClock(ph.secs - el);
+      pct = Math.max(0, Math.min(100, (ph.secs - el) / ph.secs * 100));
+    }
+    document.getElementById("rest-progress").style.width = `${pct}%`;
+    document.getElementById("work-stop").textContent = ph.kind === "up" ? "Stop" : "Done";
+    return;
+  }
+  bar.classList.remove("switch");
   if (state.rest) {
     const remaining = (state.rest.end - now) / 1000;
     bar.style.display = "block"; bar.classList.remove("done");
@@ -1279,6 +1488,12 @@ function sessionRows(s) {
         });
       } else if (!d.sets[0]?.done) {
         skipped.push(name);
+      } else if (d.sets[0].secs) {
+        sets.push({
+          section: sec.name[0] + sec.name.slice(1).toLowerCase(),
+          exerciseId: ex.id, exercise: name, swappedFrom: "", anchor: false, set: 1,
+          weight: "", reps: d.sets[0].secs, unit: "secs", done: true,
+        });
       }
     });
   });
